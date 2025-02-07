@@ -381,16 +381,16 @@ catch
 }
 
 #Subtema 8.3.2.-Try/Finally
-$comando = [System.Data.SqlClient.SqlCommand]::New(queryString, connectinon)
+
 try
 {
     $comando.Connection.Open()
-    $comando.ExecuteNonQuery()
+   $comando.ExecuteNonQuery()
 }
 finally 
 {
     Write-Error "Ha habido un problema con la ejecucion de la query. Cerrando la conexion"
-    $comando.Connection.Close()
+   $comando.Connection.Close()
 }
 
 #Subtema 8.3.3.-Variable Automatica $PSItem
