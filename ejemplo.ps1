@@ -381,7 +381,7 @@ catch
 }
 
 #Subtema 8.3.2.-Try/Finally
-
+$comando = [System.Data.SqlClient.SqlCommand]::New(queryString, connectinon)
 try
 {
     $comando.Connection.Open()
