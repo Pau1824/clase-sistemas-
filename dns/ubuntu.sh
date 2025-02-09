@@ -45,6 +45,10 @@ while true; do
     fi 
 done 
 
+IFS='.' read -r o1 o2 o3 o4 <<< "$ip_address"
+reverse_ip="${o3}.${o2}.${o1}"
+last_octet="$o4"
+
 #Entraremos a ese arhivo para modificar la ip y agregar cosas
 sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null <<EOT
 # This file is generated from information provided by the datasource.  Changes
@@ -107,9 +111,9 @@ zone "$domain" {
 	file "/etc/bind/db.$domain";
 };
 
-zone "$(echo $ip_address | awk -F'.''{print $3"."$2"."$1}').in-addr.arpa" {
+zone "$reverse_ip.in-addr.arpa" {
 	type master;
-	file "/etc/bind/db.$(echo $ip_address | awk -F'.''{print $3"."$2"."$1}')";
+	file "/etc/bind/db.${reverse_ip}";
 };
 // Consider adding the 1918 zones here, if they are not used in your
 // organization
@@ -117,9 +121,9 @@ zone "$(echo $ip_address | awk -F'.''{print $3"."$2"."$1}').in-addr.arpa" {
 EOT
 
 #Copio el archivo db.127 y le pongo db.nombre de la ip
-cp /etc/bind/db.127 /etc/bind/db.$(echo $ip_address | awk -F'.''{print $3"."$2"."$1}')
+cp /etc/bind/db.127 /etc/bind/db.${reverse_ip}
 #Me meto a ese archivo que copie 
-sudo tee /etc/bind/db.$(echo $ip_address | awk -F'.''{print $3"."$2"."$1}') > /dev/null <<EOT
+sudo tee /etc/bind/db.${reverse_ip} > /dev/null <<EOT
 ;
 ; BIND reverse data file for local loopback interface
 ;
@@ -132,7 +136,7 @@ $TTL	604800
 			 604800 )	; Negative Cache TTL
 ;
 @	IN	NS	$domain.
-$(echo $ip_address | awk -F'.''{print $4}')	IN	PTR	$domain.
+$last_octet	IN	PTR	$domain.
 EOT
 
 #Copio bd.local y le pongo db.nombre del domino
