@@ -117,7 +117,7 @@ zone "$(echo $ip_address | awk -F'.''{print $3"."$2"."$1}').in-addr.arpa" {
 EOT
 
 #Copio el archivo db.127 y le pongo db.nombre de la ip
-cp /etc/bind/db.127 etc/bind/db.$(echo $ip_address | awk -F'.''{print $3"."$2"."$1}')
+cp /etc/bind/db.127 /etc/bind/db.$(echo $ip_address | awk -F'.''{print $3"."$2"."$1}')
 #Me meto a ese archivo que copie 
 sudo tee /etc/bind/db.$(echo $ip_address | awk -F'.''{print $3"."$2"."$1}') > /dev/null <<EOT
 ;
