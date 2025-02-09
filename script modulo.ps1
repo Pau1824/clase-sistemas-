@@ -39,3 +39,12 @@ if ($backups.Count -gt $backupCount) {
 
 
 $env:PSModulePath
+cd ..
+CD C:\Program Files\WindowsPowerShell\Modules
+ls
+
+
+$Time = New-ScheduledTaskTrigger -At 02:00 -Daily
+$PS = New-ScheduledTaskAction -Execute "Powershell.exe" -Argument "-Command `"Import-Module BackupRegistry -Force;
+Backup-Registry - rutaBackup 'D:\tmp\Backups\Registry'`""
+Register-ScheduledTask -TaskName "Ejecutar Backup del registro del sistema" -Trigger $Time -Action $PS
