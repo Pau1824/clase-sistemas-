@@ -127,7 +127,7 @@ sudo tee /etc/bind/db.${reverse_ip} > /dev/null <<EOT
 ;
 ; BIND reverse data file for local loopback interface
 ;
-$TTL	604800
+\$TTL	604800
 @	IN	SOA	$domain. root.$domain. (
 			      1		; Serial
 			 604800		; Refresh
@@ -147,7 +147,7 @@ sudo tee /etc/bind/db.$domain > /dev/null <<EOT
 ;
 ; BIND data file for local loopback interface
 ;
-$TTL	604800
+\$TTL	604800
 @	IN	SOA	$domain. root.$domain. (
 			      2		; Serial
 			 604800		; Refresh
