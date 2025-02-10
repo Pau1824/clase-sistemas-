@@ -49,31 +49,31 @@ do {
 # Separar la IP en octetos y construir la IP reversa
 $octetos = $ip_address -split '\.'
 $tres = "$($octetos[0]).$($octetos[1]).$($octetos[2])"
-$reverse_ip = "$($octetos[2]).$($octetos[1]).$($octetos[0])"
+$reverse_ip = "$($octetos[2]).$($octetos[1]).$($octetos[0]).in-addr.arpa"
 $last_octet = $octetos[3]
+$last_octetp = "$($octetos[3]).in-addr.arpa"
 $mascara = "255.255.255.0"
-$gateway = ""
 
 #comando para poner ip fija
-netsh interface ipv4 set address name="Ethernet 2" static $ip_address $mascara $gateway
+netsh interface ipv4 set address name="Ethernet 2" static $ip_address $mascara 
 #comando para configurar el dns
-netsh interface ipv4 set dns name="Ethernet2" static 8.8.8.8
+netsh interface ipv4 set dns name="Ethernet 2" static 8.8.8.8
 
 #comando para instalar servicio dns
 Install-WindowsFeature -Name DNS -IncludeManagementTools
 
 Add-DnsServerPrimaryZone -Name "$domain" -ZoneFile "$domain.dns" -DynamicUpdate None -PassThru 
-Add-DnsServerPrimaryZone -NetworkID $ip_address -ZoneFile "$reverse_ip.in-addr.arpa.dns" -DynamicUpdate None -PassThru 
+Add-DnsServerPrimaryZone -NetworkID $ip_address -ZoneFile "$reverse_ip.dns" -DynamicUpdate None -PassThru 
 Get-DnsServerZone 
 Add-DnsServerResourceRecordA -Name "www" -ZoneName "$domain" -IPv4Address "$ip_address" -TimeToLive 01:00:00 -CreatePtr -PassThru 
 Get-DnsServerResourceRecord -ZoneName "$domain" | Format-Table -AutoSize -Wrap
 Get-DnsServerResourceRecord -ZoneName "$domain" | Format-Table -AutoSize -Wrap
 Get-DnsServerZone 
-Add-DnsServerPrimaryZone -Network "$($tres).0/24" -ZoneFile "$reverse_ip.in-addr.arpa.dns" -DynamicUpdate None -PassThru
+Add-DnsServerPrimaryZone -Network "$($tres).0/24" -ZoneFile "$reverse_ip.dns" -DynamicUpdate None -PassThru
 Get-DnsServerZone 
-Get-DnsServerResourceRecord -ZoneName "$reverse_ip.in-addr.arpa"
-Add-DnsServerResourceRecordPtr -Name "$last_octet" -ZoneName "$reverse_ip.in-addr.arpa" -PtrDomainName "$domain" -TimeToLive 01:00:00 -PassThru
-Get-DnsServerResourceRecord -ZoneName  "$last_octet.in-addr.arpa"
+Get-DnsServerResourceRecord -ZoneName "$reverse_ip"
+Add-DnsServerResourceRecordPtr -Name "$last_octet" -ZoneName "$reverse_ip" -PtrDomainName "$domain" -TimeToLive 01:00:00 -PassThru
+Get-DnsServerResourceRecord -ZoneName  "$last_octetp"
 Restart-Service DNS
 nslookup $domain localhost
 nslookup www.$domain localhost
