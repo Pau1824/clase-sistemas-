@@ -68,7 +68,7 @@ Get-DnsServerZone
 Add-DnsServerResourceRecordA -Name "www" -ZoneName "$domain" -IPv4Address "$ip_address" -TimeToLive 01:00:00 -CreatePtr -PassThru 
 Get-DnsServerResourceRecord -ZoneName "$domain" | Format-Table -AutoSize -Wrap
 Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddress "$ip_address"
-New-NetFirewallRule -DisplayName "Permitir Ping Entrante" -Direction Inbound -Protocol IMCPv4 -Action Allow
+New-NetFirewallRule -DisplayName "Permitir Ping Entrante" -Direction Inbound -Protocol ICMPv4 -Action Allow
 Get-DnsServerResourceRecord -ZoneName "$domain"
 Add-DnsServerResourceRecordA -Name "@" -ZoneName "$domain" -IPv4Address "$ip_address" -TimeToLive 01:00:00 -PassThru
 
