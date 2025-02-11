@@ -55,7 +55,7 @@ $last_octetp = "$($octetos[3]).in-addr.arpa"
 $mascara = "255.255.255.0"
 
 #comando para poner ip fija
-netsh interface ipv4 set address name="Ethernet 2" static $ip_address $mascara 
+netsh interface ipv4 set address name="Ethernet 2" static $ip_address $mascara
 #comando para configurar el dns
 netsh interface ipv4 set dns name="Ethernet 2" static 8.8.8.8
 
@@ -63,18 +63,16 @@ netsh interface ipv4 set dns name="Ethernet 2" static 8.8.8.8
 Install-WindowsFeature -Name DNS -IncludeManagementTools
 
 Add-DnsServerPrimaryZone -Name "$domain" -ZoneFile "$domain.dns" -DynamicUpdate None -PassThru 
-Add-DnsServerPrimaryZone -NetworkID $ip_address -ZoneFile "$reverse_ip.dns" -DynamicUpdate None -PassThru 
+Add-DnsServerPrimaryZone -NetworkID "$($tres).0/24" -ZoneFile "$reverse_ip.dns" -DynamicUpdate None -PassThru 
 Get-DnsServerZone 
 Add-DnsServerResourceRecordA -Name "www" -ZoneName "$domain" -IPv4Address "$ip_address" -TimeToLive 01:00:00 -CreatePtr -PassThru 
 Get-DnsServerResourceRecord -ZoneName "$domain" | Format-Table -AutoSize -Wrap
-Get-DnsServerResourceRecord -ZoneName "$domain" | Format-Table -AutoSize -Wrap
-Get-DnsServerZone 
-Add-DnsServerPrimaryZone -Network "$($tres).0/24" -ZoneFile "$reverse_ip.dns" -DynamicUpdate None -PassThru
-Get-DnsServerZone 
-Get-DnsServerResourceRecord -ZoneName "$reverse_ip"
-Add-DnsServerResourceRecordPtr -Name "$last_octet" -ZoneName "$reverse_ip" -PtrDomainName "$domain" -TimeToLive 01:00:00 -PassThru
-Get-DnsServerResourceRecord -ZoneName  "$last_octetp"
-Restart-Service DNS
-nslookup $domain localhost
-nslookup www.$domain localhost
-nslookup $ip_address localhost
+Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddress "$ip_address"
+New-NetFirewallRule -DisplayName "Permitir Ping Entrante" -Direction Inbound -Protocol IMCPv4 -Action Allow
+Get-DnsServerResourceRecord -ZoneName "$domain"
+Add-DnsServerResourceRecordA -Name "@" -ZoneName "$domain" -IPv4Address "$ip_address" -TimeToLive 01:00:00 -PassThru
+
+
+nslookup $domain 
+nslookup www.$domain 
+nslookup $ip_address 
