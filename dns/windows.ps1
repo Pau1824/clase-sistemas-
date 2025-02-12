@@ -28,10 +28,10 @@ function Validar-Dominio {
 do {
     $ip_address = Read-Host "Ingrese la direccion IP del servidor DNS"
     if (Validar-IP $ip_address) {
-        Write-Host "¡Dirección IP válida ingresada: $ip_address!" -ForegroundColor Green
+        Write-Host "Dirección IP valida ingresada: $ip_address" -ForegroundColor Green
         break
     } else {
-        Write-Host "La dirección IP ingresada no es válida. Por favor, inténtelo nuevamente." -ForegroundColor Red
+        Write-Host "La dirección IP ingresada no es valida. Por favor, intentelo nuevamente." -ForegroundColor Red
     }
 } while ($true)
 
@@ -39,10 +39,10 @@ do {
 do {
     $domain = Read-Host "Ingrese el dominio"
     if (Validar-Dominio $domain) {
-        Write-Host "¡Dominio válido ingresado: $domain!" -ForegroundColor Green
+        Write-Host "Dominio valido ingresado: $domain" -ForegroundColor Green
         break
     } else {
-        Write-Host "El dominio ingresado no es válido o no termina con '.com'. Por favor, inténtelo nuevamente." -ForegroundColor Red
+        Write-Host "El dominio ingresado no es valido o no termina con '.com'. Por favor, intentelo nuevamente." -ForegroundColor Red
     }
 } while ($true)
 
