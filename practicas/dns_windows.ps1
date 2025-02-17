@@ -62,14 +62,22 @@ netsh interface ipv4 set dns name="Ethernet 2" static 8.8.8.8
 #comando para instalar servicio dns
 Install-WindowsFeature -Name DNS -IncludeManagementTools
 
+#Creo una zona DNS de reenvío
 Add-DnsServerPrimaryZone -Name "$domain" -ZoneFile "$domain.dns" -DynamicUpdate None -PassThru 
+#zona DNS inversa
 Add-DnsServerPrimaryZone -NetworkID "$($tres).0/24" -ZoneFile "$reverse_ip.dns" -DynamicUpdate None -PassThru 
+#Compruebo las zonas creadas 
 Get-DnsServerZone 
+#creamos un archivo de búsqueda
 Add-DnsServerResourceRecordA -Name "www" -ZoneName "$domain" -IPv4Address "$ip_address" -TimeToLive 01:00:00 -CreatePtr -PassThru 
-Get-DnsServerResourceRecord -ZoneName "$domain" | Format-Table -AutoSize -Wrap
+#Verificamos que se guardo
+Get-DnsServerResourceRecord -ZoneName "$domain" | Format-Table -AutoSize -Wrap 
+#Comando para que apunte al dns
 Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddress "$ip_address"
+#Regla Firewall
 New-NetFirewallRule -DisplayName "Permitir Ping Entrante" -Direction Inbound -Protocol ICMPv4 -Action Allow
 Get-DnsServerResourceRecord -ZoneName "$domain"
+#Creamos otro archivo de búsqueda 
 Add-DnsServerResourceRecordA -Name "@" -ZoneName "$domain" -IPv4Address "$ip_address" -TimeToLive 01:00:00 -PassThru
 
 
