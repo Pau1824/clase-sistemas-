@@ -56,8 +56,8 @@ echo "Servidor DHCP: $ip_address"
 echo "Rango de IPs: $ip_inicio - $ip_fin"
 
 IFS='.' read -r o1 o2 o3 o4 <<< "$ip_address"
-subneteo="${o1}.${o2}.${o3}.${0}"
-puerta="${o1}.${o2}.${o3}.${1}"
+subneteo="${o1}.${o2}.${o3}.0"
+puerta="${o1}.${o2}.${o3}.1"
 
 #Instalamos el servicio dhcp
 sudo apt-get install isc-dhcp-server
