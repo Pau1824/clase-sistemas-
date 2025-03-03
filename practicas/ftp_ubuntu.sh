@@ -150,8 +150,8 @@ cambiar_grupo() {
         nuevo_grupo="reprobados"
     fi
     
-    sudo mv "/srv/ftp/$grupo_actual/$nombre" "/srv/ftp/$nuevo_grupo/$nombre"
-    sudo chown "$nombre:ftp" "/srv/ftp/$nuevo_grupo/$nombre"
+    sudo mv "/srv/ftp/$nombre/$grupo_actual" "/srv/ftp/$nombre/$nuevo_grupo"
+    sudo chown "$nombre:ftp" "/srv/ftp/$nombre/$nuevo_grupo"
     sudo usermod -G "$nuevo_grupo" "$nombre"
     
     # Montar carpetas nuevamente
