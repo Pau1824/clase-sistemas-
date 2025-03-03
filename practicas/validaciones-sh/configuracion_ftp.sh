@@ -1,13 +1,11 @@
-#!/bin/bash
 
-CONFIGURAR_FTP() {
     USERNAME=$1
     GRUPO_NOMBRE=$2
 
     sudo su
     #Intalacion del servicio
     apt-get update
-    apt-get install vsfpd
+    apt-get install vsftpd
 
     #Abrir puertos en el firewall
     ufw enable
@@ -87,4 +85,4 @@ EOT
 
     systemctl restart vsftpd
     systemctl status vsftpd
-}
+

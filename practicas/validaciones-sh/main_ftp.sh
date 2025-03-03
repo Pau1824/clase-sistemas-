@@ -3,10 +3,6 @@ source ./configuracion_ftp.sh
 source ./crear_usuario.sh
 source ./cambiar_grupo.sh
 
-# Configurar la IP fija antes de iniciar el menú
-ip_address="192.168.1.10"
-bash configurar_ip.sh "$ip_address"
-
 # Menú interactivo
 while true; do
     echo "================================="
@@ -18,8 +14,10 @@ while true; do
     read -p "Seleccione una opción: " OPCION
 
     case $OPCION in
-        1) bash crear_usuario.sh ;;
-        2) bash cambiar_grupo.sh ;;
+        1) read USERNAME GRUPO_NOMBRE <<< "$(bash crear_usuario.sh)"
+            bash configuracion_ftp.sh "$USERNAME" "$GRUPO_NOMBRE"
+            ;;
+        2) cambiar_grupo ;;
         3) echo "Saliendo..."; exit 0 ;;
         *) echo "Opción no válida, intente de nuevo." ;;
     esac

@@ -1,5 +1,4 @@
 
-crear_usuario() {
     read -p "Ingrese el nombre del usuario: " USERNAME
     read -s -p "Ingrese la contraseña: " PASSWORD
     echo
@@ -25,8 +24,5 @@ crear_usuario() {
     sudo adduser --home /srv/ftp/$USERNAME --shell /usr/sbin/nologin --disabled-password $USERNAME
     echo "$USERNAME:$PASSWORD" | sudo chpasswd
 
-    # Configuración general
-    source configuracion_ftp.sh "$USERNAME" "$GRUPO_NOMBRE"
-
-    echo "Usuario '$USERNAME' creado correctamente como '$GRUPO_NOMBRE'."
-}
+    echo "$USERNAME $GRUPO_NOMBRE"
+    

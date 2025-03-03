@@ -13,3 +13,4 @@ network:
 EOT
 
 sudo netplan apply
+echo "La IP ha sido configurada como $ip_address"

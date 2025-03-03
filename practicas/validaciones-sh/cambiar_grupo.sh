@@ -5,7 +5,7 @@ cambiar_grupo() {
     # Verificar si el usuario existe
     if ! id "$USERNAME" &>/dev/null; then
         echo "El usuario '$USERNAME' no existe."
-        return
+        exit 1
     fi
 
     read -p "Desea cambiar a (1) Reprobado o (2) Recursador? (1/2): " NUEVO_GRUPO
@@ -18,7 +18,13 @@ cambiar_grupo() {
         VIEJO_GRUPO_NOMBRE="reprobados"
     else
         echo "Opción no válida. Volviendo al menú..."
-        return
+        exit 1
+    fi
+
+    #Validacion para evitar cambios necesarios
+    if mount | grep -q "/srv/ftp/$USERNAME/$NUEVO_GRUPO_NOMBRE"; then
+        echo "El usuario '$USERNAME' ya pertenece a '$NUEVO_GRUPO_NOMBRE'."
+        exit 0
     fi
 
     # Desmontar el grupo anterior si existía
@@ -29,8 +35,8 @@ cambiar_grupo() {
     sudo mount --bind /srv/ftp/$NUEVO_GRUPO_NOMBRE /srv/ftp/$USERNAME/$NUEVO_GRUPO_NOMBRE
 
     # Actualizar /etc/fstab para cambios persistentes
-    sudo sed -i "/\/srv\/ftp\/$USERNAME\/$VIEJO_GRUPO_NOMBRE/d" /etc/fstab
-    echo "/srv/ftp/$NUEVO_GRUPO_NOMBRE /srv/ftp/$USERNAME/$NUEVO_GRUPO_NOMBRE none bind 0 0" | sudo tee -a /etc/fstab
+    #sudo sed -i "/\/srv\/ftp\/$USERNAME\/$VIEJO_GRUPO_NOMBRE/d" /etc/fstab
+    #echo "/srv/ftp/$NUEVO_GRUPO_NOMBRE /srv/ftp/$USERNAME/$NUEVO_GRUPO_NOMBRE none bind 0 0" | sudo tee -a /etc/fstab
 
     echo "El usuario '$USERNAME' ha sido cambiado a '$NUEVO_GRUPO_NOMBRE'."
 }
