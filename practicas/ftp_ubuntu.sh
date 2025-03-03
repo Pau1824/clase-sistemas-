@@ -150,12 +150,13 @@ cambiar_grupo() {
         nuevo_grupo="reprobados"
     fi
     
-    sudo mv "/srv/ftp/$nombre/$grupo_actual" "/srv/ftp/$nombre/$nuevo_grupo"
+    sudo mkdir -p "/srv/ftp/$nombre/$nuevo_grupo"
     sudo chown "$nombre:ftp" "/srv/ftp/$nombre/$nuevo_grupo"
     sudo usermod -G "$nuevo_grupo" "$nombre"
     
     # Montar carpetas nuevamente
     sudo umount "/srv/ftp/$nombre/$grupo_actual"
+    sudo rm -r "/srv/ftp/$nombre/$grupo_actual"
     sudo mount --bind "/srv/ftp/$nuevo_grupo" "/srv/ftp/$nombre/$nuevo_grupo"
     
     echo "Usuario $nombre ahora pertenece a $nuevo_grupo."
