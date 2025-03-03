@@ -86,8 +86,6 @@ echo "Carpetas FTP creadas."
 # Función para crear usuario
 crear_usuario() {
     read -p "Ingrese el nombre del usuario: " nombre
-    read -sp "Ingrese la contraseña del usuario: " contrasena
-    echo ""
     echo "Seleccione el grupo:"
     echo "1. Reprobado"
     echo "2. Recursador"
@@ -103,8 +101,7 @@ crear_usuario() {
     fi
     
     # Crear usuario y asignar contraseña
-    sudo adduser "$nombre" --gecos "" --disabled-password
-    echo "$nombre:$contrasena" | sudo chpasswd
+     sudo adduser "$nombre"
     
     # Crear carpeta específica del usuario
     sudo mkdir -p "/srv/ftp/$nombre"
