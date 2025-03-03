@@ -134,9 +134,9 @@ cambiar_grupo() {
     fi
     
     grupo_actual=""
-    if [[ -d "/srv/ftp/reprobados/$nombre" ]]; then
+    if [[ -d "/srv/ftp/$nombre/reprobados" ]]; then
         grupo_actual="reprobados"
-    elif [[ -d "/srv/ftp/recursadores/$nombre" ]]; then
+    elif [[ -d "/srv/ftp/$nombre/recursadores" ]]; then
         grupo_actual="recursadores"
     else
         echo "El usuario no tiene grupo asignado."
