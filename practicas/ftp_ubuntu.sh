@@ -103,7 +103,7 @@ crear_usuario() {
     fi
     
     # Crear usuario y asignar contraseña
-    sudo useradd -m -s /bin/false "$nombre"
+    sudo adduser "$nombre" --gecos "" --disabled-password
     echo "$nombre:$contrasena" | sudo chpasswd
     
     # Crear carpeta específica del usuario
