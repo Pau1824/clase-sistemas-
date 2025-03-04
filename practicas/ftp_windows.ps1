@@ -16,7 +16,7 @@ if (!(Test-Path "C:\FTP\reprobados")) { mkdir "C:\FTP\reprobados" }
 if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 
 # Permitir la configuración de autorización en IIS
-Set-WebConfigurationProperty -Filter "/system.ftpServer/security/authorization" -Name overrideMode -Value "Allow" -PSPath "MACHINE/WEBROOT/APPHOST"
+Set-WebConfigurationProperty -Filter "/system.ftpServer/security/authorization" -Name "overrideMode" -Value "Allow" -PSPath "MACHINE/WEBROOT/APPHOST"
 
 # Crear el Sitio FTP en IIS y verificar el nombre correcto
 New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
@@ -100,8 +100,12 @@ function Cambiar-GrupoFTP {
     Write-Host "Usuario $NombreUsuario ahora pertenece a $NuevoGrupo." -ForegroundColor Green
 }
 
-# Deshabilitar la política SSL para permitir conexiones sin cifrado
-Set-WebConfigurationProperty -Filter "/system.ftpServer/security/sslPolicy" -Name "server.ftpsServer.sslPolicy" -Value "None" -PSPath "IIS:\Sites\$ftpSiteName"
+# Verificar si la configuración SSL existe antes de aplicarla
+if (Get-WebConfigurationProperty -Filter "/system.ftpServer/security/sslPolicy" -PSPath "IIS:\") {
+    Set-WebConfigurationProperty -Filter "/system.ftpServer/security/sslPolicy" -Name "server.ftpsServer.sslPolicy" -Value "None" -PSPath "IIS:\Sites\$ftpSiteName"
+} else {
+    Write-Host "Advertencia: No se encontró la configuración SSL en IIS, omitiendo cambio."
+}
 
 # Configurar Firewall
 New-NetFirewallRule -DisplayName "FTP (Puerto 21)" -Direction Inbound -Protocol TCP -LocalPort 21 -Action Allow
