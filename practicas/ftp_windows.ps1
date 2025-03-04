@@ -20,8 +20,8 @@ if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 
 # Crear el Sitio FTP en IIS y verificar el nombre correcto
 New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value $true
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $true
+Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value 1
+Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value 1
 
 # Crear Grupos de Usuarios si no existen
 if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
@@ -30,6 +30,14 @@ if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
 if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
     net localgroup "FTP_Recursadores" /add
 }
+
+# Configura los permisos de autorización para el acceso anónimo a la carpeta general
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTP/general"
+
+# Elimina la configuración de autorización predeterminada para las carpetas específicas
+Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/general" -Filter "system.ftpServer/security/authorization" -Name "."
+Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/reprobados" -Filter "system.ftpServer/security/authorization" -Name "."
+Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/recursadores" -Filter "system.ftpServer/security/authorization" -Name "."
 
 # Configurar permisos en IIS con el nombre correcto del sitio
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTP/publica"
