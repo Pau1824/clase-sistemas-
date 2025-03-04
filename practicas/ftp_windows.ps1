@@ -16,7 +16,7 @@ if (!(Test-Path "C:\FTP\reprobados")) { mkdir "C:\FTP\reprobados" }
 if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 
 # Permitir la configuración de autorización en IIS
-Set-WebConfigurationProperty -Filter "/system.ftpServer/security/authorization" -Name "overrideMode" -Value "Allow" -PSPath "MACHINE/WEBROOT/APPHOST"
+#Set-WebConfigurationProperty -Filter "/system.ftpServer/security/authorization" -Name "overrideMode" -Value "Allow" -PSPath "MACHINE/WEBROOT/APPHOST"
 
 # Crear el Sitio FTP en IIS y verificar el nombre correcto
 New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
