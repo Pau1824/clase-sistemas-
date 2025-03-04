@@ -32,10 +32,11 @@ if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
 }
 
 # Configurar permisos en IIS con el nombre correcto del sitio
-$ftpSiteName = "FTPServidor"  # Asegurar que coincida con `Get-WebSite`
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath "IIS:\Sites\$ftpSiteName"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="reprobados";permissions=3} -PSPath "IIS:\Sites\$ftpSiteName"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="recursadores";permissions=3} -PSPath "IIS:\Sites\$ftpSiteName"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTP/publica"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="publico";permissions=3} -PSPath IIS:\ -Location "FTP/publica"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="reprobados";permissions=3} -PSPath IIS:\ -Location "FTP/reprobados"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="recursadores";permissions=3} -PSPath IIS:\ -Location "FTP/recursadores"
+
 
 # Función para Crear Usuarios FTP
 function Crear-UsuarioFTP {
