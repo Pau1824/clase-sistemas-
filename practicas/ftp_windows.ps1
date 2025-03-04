@@ -15,6 +15,9 @@ if (!(Test-Path "C:\FTP\publica")) { mkdir "C:\FTP\publica" }
 if (!(Test-Path "C:\FTP\reprobados")) { mkdir "C:\FTP\reprobados" }
 if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 
+# Permitir la configuración de autorización en IIS
+Set-WebConfigurationProperty -Filter "/system.ftpServer/security/authorization" -Name overrideMode -Value "Allow" -PSPath "MACHINE/WEBROOT/APPHOST"
+
 # Crear el Sitio FTP en IIS y verificar el nombre correcto
 New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value $true
@@ -58,8 +61,8 @@ function Crear-UsuarioFTP {
     New-LocalUser -Name $NombreUsuario -Password $Password -Description "Usuario FTP"
     Add-LocalGroupMember -Group "FTP_$Grupo" -Member $NombreUsuario
 
-    # Crear su carpeta y enlazar las compartidas
-    New-Item -ItemType Directory -Path "C:\FTP\$NombreUsuario" -Force
+    # Verificar que las carpetas existen antes de crear enlaces
+    if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
     cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\publica" "C:\FTP\publica""
     cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\$Grupo" "C:\FTP\$Grupo""
 
@@ -97,7 +100,7 @@ function Cambiar-GrupoFTP {
     Write-Host "Usuario $NombreUsuario ahora pertenece a $NuevoGrupo." -ForegroundColor Green
 }
 
-# Configurar SSL opcional para evitar errores en FileZilla
+# Deshabilitar la política SSL para permitir conexiones sin cifrado
 Set-WebConfigurationProperty -Filter "/system.ftpServer/security/sslPolicy" -Name "server.ftpsServer.sslPolicy" -Value "None" -PSPath "IIS:\Sites\$ftpSiteName"
 
 # Configurar Firewall
