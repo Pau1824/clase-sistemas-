@@ -15,13 +15,10 @@ if (!(Test-Path "C:\FTP\publica")) { mkdir "C:\FTP\publica" }
 if (!(Test-Path "C:\FTP\reprobados")) { mkdir "C:\FTP\reprobados" }
 if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 
-# Permitir la configuración de autorización en IIS
-#Set-WebConfigurationProperty -Filter "/system.ftpServer/security/authorization" -Name "overrideMode" -Value "Allow" -PSPath "MACHINE/WEBROOT/APPHOST"
-
-# Crear el Sitio FTP en IIS y verificar el nombre correcto
-New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value 1
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value 1
+# Configurar permisos en las carpetas con icacls
+icacls "C:\FTP\publica" /grant Everyone:(R)
+icacls "C:\FTP\reprobados" /grant "FTP_Reprobados":(F)
+icacls "C:\FTP\recursadores" /grant "FTP_Recursadores":(F)
 
 # Crear Grupos de Usuarios si no existen
 if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
@@ -31,20 +28,9 @@ if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
     net localgroup "FTP_Recursadores" /add
 }
 
-# Configura los permisos de autorización para el acceso anónimo a la carpeta general
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTP/general"
-
-# Elimina la configuración de autorización predeterminada para las carpetas específicas
-Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/general" -Filter "system.ftpServer/security/authorization" -Name "."
-Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/reprobados" -Filter "system.ftpServer/security/authorization" -Name "."
-Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/recursadores" -Filter "system.ftpServer/security/authorization" -Name "."
-
-# Configurar permisos en IIS con el nombre correcto del sitio
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTP/publica"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="publico";permissions=3} -PSPath IIS:\ -Location "FTP/publica"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="reprobados";permissions=3} -PSPath IIS:\ -Location "FTP/reprobados"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="recursadores";permissions=3} -PSPath IIS:\ -Location "FTP/recursadores"
-
+# Deshabilitar SSL para permitir conexiones sin seguridad
+Set-WebConfigurationProperty -Filter "/system.ftpServer/security/ssl" -Name "controlChannelPolicy" -Value "0" -PSPath "MACHINE/WEBROOT/APPHOST"
+Set-WebConfigurationProperty -Filter "/system.ftpServer/security/ssl" -Name "dataChannelPolicy" -Value "0" -PSPath "MACHINE/WEBROOT/APPHOST"
 
 # Función para Crear Usuarios FTP
 function Crear-UsuarioFTP {
@@ -58,8 +44,8 @@ function Crear-UsuarioFTP {
     }
 
     $Grupo = switch (Read-Host "Seleccione el grupo: 1 para Reprobados, 2 para Recursadores") {
-        "1" { "Reprobados" }
-        "2" { "Recursadores" }
+        "1" { "FTP_Reprobados" }
+        "2" { "FTP_Recursadores" }
         default {
             Write-Host "Opción inválida. Debe seleccionar 1 o 2." -ForegroundColor Red
             return
@@ -68,12 +54,12 @@ function Crear-UsuarioFTP {
 
     $Password = Read-Host "Ingrese contraseña" -AsSecureString
     New-LocalUser -Name $NombreUsuario -Password $Password -Description "Usuario FTP"
-    Add-LocalGroupMember -Group "FTP_$Grupo" -Member $NombreUsuario
+    Add-LocalGroupMember -Group $Grupo -Member $NombreUsuario
 
-    # Verificar que las carpetas existen antes de crear enlaces
+    # Crear carpeta del usuario y vincular carpetas públicas y de grupo
     if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
     cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\publica" "C:\FTP\publica""
-    cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\$Grupo" "C:\FTP\$Grupo""
+    cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\grupo" "C:\FTP\$Grupo""
 
     Write-Host "Usuario $NombreUsuario creado en el grupo $Grupo." -ForegroundColor Green
 }
@@ -90,38 +76,28 @@ function Cambiar-GrupoFTP {
     }
 
     $GrupoActual = if ((Get-LocalGroupMember -Group "FTP_Reprobados" -Member $NombreUsuario -ErrorAction SilentlyContinue)) {
-        "Reprobados"
+        "FTP_Reprobados"
     } elseif ((Get-LocalGroupMember -Group "FTP_Recursadores" -Member $NombreUsuario -ErrorAction SilentlyContinue)) {
-        "Recursadores"
+        "FTP_Recursadores"
     } else {
         Write-Host "El usuario no pertenece a ningún grupo." -ForegroundColor Red
         return
     }
 
-    $NuevoGrupo = if ($GrupoActual -eq "Reprobados") { "Recursadores" } else { "Reprobados" }
+    $NuevoGrupo = if ($GrupoActual -eq "FTP_Reprobados") { "FTP_Recursadores" } else { "FTP_Reprobados" }
 
-    Remove-LocalGroupMember -Group "FTP_$GrupoActual" -Member $NombreUsuario
-    Add-LocalGroupMember -Group "FTP_$NuevoGrupo" -Member $NombreUsuario
+    Remove-LocalGroupMember -Group $GrupoActual -Member $NombreUsuario
+    Add-LocalGroupMember -Group $NuevoGrupo -Member $NombreUsuario
 
-    Remove-Item "C:\FTP\$NombreUsuario\$GrupoActual" -Force
-    cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\$NuevoGrupo" "C:\FTP\$NuevoGrupo""
+    Remove-Item "C:\FTP\$NombreUsuario\grupo" -Force
+    cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\grupo" "C:\FTP\$NuevoGrupo""
 
     Write-Host "Usuario $NombreUsuario ahora pertenece a $NuevoGrupo." -ForegroundColor Green
-}
-
-# Verificar si la configuración SSL existe antes de aplicarla
-if (Get-WebConfigurationProperty -Filter "/system.ftpServer/security/sslPolicy" -PSPath "IIS:\") {
-    Set-WebConfigurationProperty -Filter "/system.ftpServer/security/sslPolicy" -Name "server.ftpsServer.sslPolicy" -Value "None" -PSPath "IIS:\Sites\$ftpSiteName"
-} else {
-    Write-Host "Advertencia: No se encontró la configuración SSL en IIS, omitiendo cambio."
 }
 
 # Configurar Firewall
 New-NetFirewallRule -DisplayName "FTP (Puerto 21)" -Direction Inbound -Protocol TCP -LocalPort 21 -Action Allow
 New-NetFirewallRule -DisplayName "FTP PASV (50000-51000)" -Direction Inbound -Protocol TCP -LocalPort 50000-51000 -Action Allow
-
-# Reiniciar el Servidor FTP
-Restart-WebItem "IIS:\Sites\$ftpSiteName"
 
 # Menú Interactivo
 while ($true) {
