@@ -16,9 +16,9 @@ if (!(Test-Path "C:\FTP\reprobados")) { mkdir "C:\FTP\reprobados" }
 if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 
 # Configurar permisos en las carpetas con icacls
-icacls "C:\FTP\publica" /grant Everyone:(R)
-icacls "C:\FTP\reprobados" /grant "FTP_Reprobados":(F)
-icacls "C:\FTP\recursadores" /grant "FTP_Recursadores":(F)
+icacls "C:\FTP\publica" /grant "Everyone:R"
+icacls "C:\FTP\reprobados" /grant "FTP_Reprobados:F"
+icacls "C:\FTP\recursadores" /grant "FTP_Recursadores:F"
 
 # Crear Grupos de Usuarios si no existen
 if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
@@ -28,9 +28,9 @@ if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
     net localgroup "FTP_Recursadores" /add
 }
 
-# Deshabilitar SSL para permitir conexiones sin seguridad
-Set-WebConfigurationProperty -Filter "/system.ftpServer/security/ssl" -Name "controlChannelPolicy" -Value "0" -PSPath "MACHINE/WEBROOT/APPHOST"
-Set-WebConfigurationProperty -Filter "/system.ftpServer/security/ssl" -Name "dataChannelPolicy" -Value "0" -PSPath "MACHINE/WEBROOT/APPHOST"
+# Deshabilitar SSL en el FTP para facilitar el acceso de los usuarios
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\InetMgr\Parameters" -Name "EnableSsl" -Value 0
+Restart-Service FTPSVC
 
 # Función para Crear Usuarios FTP
 function Crear-UsuarioFTP {
@@ -99,6 +99,9 @@ function Cambiar-GrupoFTP {
 New-NetFirewallRule -DisplayName "FTP (Puerto 21)" -Direction Inbound -Protocol TCP -LocalPort 21 -Action Allow
 New-NetFirewallRule -DisplayName "FTP PASV (50000-51000)" -Direction Inbound -Protocol TCP -LocalPort 50000-51000 -Action Allow
 
+# Reiniciar el servicio FTP para aplicar todos los cambios
+Restart-Service FTPSVC
+
 # Menú Interactivo
 while ($true) {
     Write-Host "\n=== Menú de Administración FTP ===" -ForegroundColor Cyan
@@ -126,3 +129,4 @@ while ($true) {
         }
     }
 }
+
