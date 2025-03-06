@@ -17,7 +17,13 @@ if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 
 # Crear el Sitio FTP en IIS
 New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
-Set-ItemProperty -Path "IIS:\Sites\FTPServidor" -Name bindings -Value @{protocol="ftp";bindingInformation="*:21:"}
+#Set-ItemProperty -Path "IIS:\Sites\FTPServidor" -Name bindings -Value @{protocol="ftp";bindingInformation="*:21:"}
+
+# Configuración de autenticación
+Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value 1
+Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value 1
+
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTPServidor"
 
 # Crear Grupos de Usuarios si no existen
 if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
@@ -26,6 +32,9 @@ if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
 if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
     net localgroup "FTP_Recursadores" /add
 }
+
+# Permitir la configuración de autorización en IIS
+#Set-WebConfigurationProperty -Filter "/system.ftpServer/security/authorization" -Name "overrideMode" -Value "Allow" -PSPath "MACHINE/WEBROOT/APPHOST"
 
 # Eliminar configuraciones previas en las carpetas
 Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/publica" -Filter "system.ftpServer/security/authorization" -Name "."
@@ -42,14 +51,16 @@ Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.controlCh
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
 
 # Configuración de autenticación
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value $true
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $true
+#Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value 1
+#Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value 1
 
 # Configurar el aislamiento de usuarios en FTP
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.userIsolation.mode -Value 2
+#Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.userIsolation.mode -Value 2
 
 # Configurar IIS para usar la carpeta correcta
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.rootDirectory -Value "C:\FTP"
+#Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.rootDirectory -Value "C:\FTP"
+
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
 # Función para Crear Usuarios FTP
 function Crear-UsuarioFTP {
@@ -72,17 +83,20 @@ function Crear-UsuarioFTP {
     }
 
     $Password = Read-Host "Ingrese contraseña" -AsSecureString
-    New-LocalUser -Name $NombreUsuario -Password $Password -Description "Usuario FTP"
+    New-LocalUser -Name $NombreUsuario -Password $Password
     Add-LocalGroupMember -Group $Grupo -Member $NombreUsuario
 
     # Crear carpeta del usuario y vincular carpetas públicas y de grupo
     if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
+
+    Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
+
     # Asignar permisos al usuario en IIS en su propia carpeta
     Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="$NombreUsuario";permissions=3} -PSPath IIS:\ -Location "FTP/$NombreUsuario"
     
     # Vincular carpetas públicas y de grupo
-    cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\publica" "C:\FTP\publica""
-    cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\grupo" "C:\FTP\$Grupo""
+    cmd /c "mklink /d "C:\FTP\$NombreUsuario\publica" "C:\FTP\publica""
+    cmd /c "mklink /d "C:\FTP\$NombreUsuario\$Grupo" "C:\FTP\$Grupo""
 
     Write-Host "Usuario $NombreUsuario creado en el grupo $Grupo." -ForegroundColor Green
 }
