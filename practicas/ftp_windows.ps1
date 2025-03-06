@@ -37,14 +37,14 @@ if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
 #Set-WebConfigurationProperty -Filter "/system.ftpServer/security/authorization" -Name "overrideMode" -Value "Allow" -PSPath "MACHINE/WEBROOT/APPHOST"
 
 # Eliminar configuraciones previas en las carpetas
-Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/publica" -Filter "system.ftpServer/security/authorization" -Name "."
-Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/reprobados" -Filter "system.ftpServer/security/authorization" -Name "."
-Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/recursadores" -Filter "system.ftpServer/security/authorization" -Name "."
+Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/publica" -Filter "system.ftpServer/security/authorization" -Name "."
+Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/reprobados" -Filter "system.ftpServer/security/authorization" -Name "."
+Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/recursadores" -Filter "system.ftpServer/security/authorization" -Name "."
 
 # Asignar permisos específicos a cada grupo con `Add-WebConfiguration`
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTP/publica"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Reprobados";permissions=3} -PSPath IIS:\ -Location "FTP/reprobados"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Recursadores";permissions=3} -PSPath IIS:\ -Location "FTP/recursadores"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTPServidor/publica"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Reprobados";permissions=3} -PSPath IIS:\ -Location "FTPServidor/reprobados"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Recursadores";permissions=3} -PSPath IIS:\ -Location "FTPServidor/recursadores"
 
 # Deshabilitar SSL en el FTP
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
@@ -89,10 +89,10 @@ function Crear-UsuarioFTP {
     # Crear carpeta del usuario y vincular carpetas públicas y de grupo
     if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
 
-    Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
+    Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
 
     # Asignar permisos al usuario en IIS en su propia carpeta
-    Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="$NombreUsuario";permissions=3} -PSPath IIS:\ -Location "FTP/$NombreUsuario"
+    Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="$NombreUsuario";permissions=3} -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario"
     
     # Vincular carpetas públicas y de grupo
     cmd /c "mklink /d "C:\FTP\$NombreUsuario\publica" "C:\FTP\publica""
