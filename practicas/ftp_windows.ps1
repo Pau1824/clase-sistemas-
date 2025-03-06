@@ -129,8 +129,8 @@ New-NetFirewallRule -DisplayName "FTP (Puerto 21)" -Direction Inbound -Protocol 
 New-NetFirewallRule -DisplayName "FTP PASV (50000-51000)" -Direction Inbound -Protocol TCP -LocalPort 50000-51000 -Action Allow
 
 # Reiniciar el servicio FTP para aplicar todos los cambios
-Restart-Service W3SVC
-Restart-Service FTPSVC
+#Restart-Service W3SVC
+#Restart-Service FTPSVC
 
 # Menú Interactivo
 while ($true) {
