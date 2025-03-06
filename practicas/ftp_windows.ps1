@@ -15,10 +15,9 @@ if (!(Test-Path "C:\FTP\publica")) { mkdir "C:\FTP\publica" }
 if (!(Test-Path "C:\FTP\reprobados")) { mkdir "C:\FTP\reprobados" }
 if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 
-# Configurar permisos en las carpetas con icacls
-icacls "C:\FTP\publica" /grant "Everyone:R"
-icacls "C:\FTP\reprobados" /grant "FTP_Reprobados:F"
-icacls "C:\FTP\recursadores" /grant "FTP_Recursadores:F"
+# Crear el Sitio FTP en IIS
+New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
+Set-ItemProperty -Path "IIS:\Sites\FTPServidor" -Name bindings -Value @{protocol="ftp";bindingInformation="*:21:"}
 
 # Crear Grupos de Usuarios si no existen
 if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
@@ -27,6 +26,11 @@ if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
 if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
     net localgroup "FTP_Recursadores" /add
 }
+
+# Configurar permisos en las carpetas con icacls
+icacls "C:\FTP\publica" /grant "Everyone:R"
+icacls "C:\FTP\reprobados" /grant "FTP_Reprobados:F"
+icacls "C:\FTP\recursadores" /grant "FTP_Recursadores:F"
 
 # Deshabilitar SSL en el FTP para facilitar el acceso de los usuarios
 Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\InetMgr\Parameters" -Name "EnableSsl" -Value 0
