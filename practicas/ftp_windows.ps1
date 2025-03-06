@@ -19,6 +19,10 @@ if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
 Set-ItemProperty -Path "IIS:\Sites\FTPServidor" -Name bindings -Value @{protocol="ftp";bindingInformation="*:21:"}
 
+# Configuración de autenticación
+Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value $true
+Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $true
+
 # Crear Grupos de Usuarios si no existen
 if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
     net localgroup "FTP_Reprobados" /add
@@ -32,9 +36,9 @@ icacls "C:\FTP\publica" /grant "Everyone:R"
 icacls "C:\FTP\reprobados" /grant "FTP_Reprobados:F"
 icacls "C:\FTP\recursadores" /grant "FTP_Recursadores:F"
 
-# Deshabilitar SSL en el FTP para facilitar el acceso de los usuarios
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\InetMgr\Parameters" -Name "EnableSsl" -Value 0
-Restart-Service FTPSVC
+# Deshabilitar SSL en el FTP
+Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
+Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
 
 # Función para Crear Usuarios FTP
 function Crear-UsuarioFTP {
