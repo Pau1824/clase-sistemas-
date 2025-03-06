@@ -17,13 +17,14 @@ if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 
 # Crear el Sitio FTP en IIS
 New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
-#Set-ItemProperty -Path "IIS:\Sites\FTPServidor" -Name bindings -Value @{protocol="ftp";bindingInformation="*:21:"}
 
 # Configuración de autenticación
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value 1
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value 1
 
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTPServidor"
+
+Set-ItemPrperty "IIS:\Sites\FTPServidor" -Name ftpServer.userIsolation.mode -Value "IsolateRootDirectoryOnly"
 
 # Crear Grupos de Usuarios si no existen
 if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
@@ -32,9 +33,6 @@ if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
 if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
     net localgroup "FTP_Recursadores" /add
 }
-
-# Permitir la configuración de autorización en IIS
-#Set-WebConfigurationProperty -Filter "/system.ftpServer/security/authorization" -Name "overrideMode" -Value "Allow" -PSPath "MACHINE/WEBROOT/APPHOST"
 
 # Eliminar configuraciones previas en las carpetas
 Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/publica" -Filter "system.ftpServer/security/authorization" -Name "."
@@ -49,16 +47,6 @@ Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessT
 # Deshabilitar SSL en el FTP
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
-
-# Configuración de autenticación
-#Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value 1
-#Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value 1
-
-# Configurar el aislamiento de usuarios en FTP
-#Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.userIsolation.mode -Value 2
-
-# Configurar IIS para usar la carpeta correcta
-#Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.rootDirectory -Value "C:\FTP"
 
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
