@@ -7,16 +7,18 @@ Import-Module WebAdministration
 # Creación de Carpetas
 mkdir C:\FTP
 mkdir C:\FTP\publica
-mkdir C:\FTP\reprobados
-mkdir C:\FTP\recursadores
+mkdir C:\FTP\LocalUser
+mkdir C:\FTP\LocalUser\reprobados
+mkdir C:\FTP\LocalUser\recursadores
 
 # Verificar que las carpetas existen antes de continuar
-if (!(Test-Path "C:\FTP\publica")) { mkdir "C:\FTP\publica" }
-if (!(Test-Path "C:\FTP\reprobados")) { mkdir "C:\FTP\reprobados" }
-if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
+if (!(Test-Path "C:\FTP\LocalUser")) { mkdir "C:\FTP\LocalUser" }
+if (!(Test-Path "C:\FTP\LocalUser\publica")) { mkdir "C:\FTP\LocalUser\publica" }
+if (!(Test-Path "C:\FTP\LocalUser\reprobados")) { mkdir "C:\FTP\LocalUser\reprobados" }
+if (!(Test-Path "C:\FTP\LocalUser\recursadores")) { mkdir "C:\FTP\LocalUser\recursadores" }
 
 # Crear el Sitio FTP en IIS
-New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
+New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP\LocalUser"
 
 # Configuración de autenticación
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value 1
