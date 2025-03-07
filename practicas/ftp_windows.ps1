@@ -28,7 +28,7 @@ Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authenticatio
 
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.userIsolation.mode -Value "IsolateRootDirectoryOnly"
 
-cmd /c "mklink /d "C:\FTP\LocalUser\Public\publica" "C:\FTP\publica""
+cmd /c mklink /d "C:\FTP\LocalUser\Public\publica" "C:\FTP\publica"
 
 # Crear Grupos de Usuarios si no existen
 if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
@@ -82,7 +82,7 @@ function Crear-UsuarioFTP {
         }
     }
 
-    $Password = Read-Host "Ingrese contraseña" -AsSecureString
+    $Password = Read-Host "Ingrese contraseña" #-AsSecureString
     net user $NombreUsuario $Password /add
     net localgroup $Grupo $NombreUsuario /add
     net localgroup "FTP_Publico" $NombreUsuario /add
@@ -92,9 +92,9 @@ function Crear-UsuarioFTP {
     if (!(Test-Path "C:\FTP\LocalUser\$NombreUsuario")) { mkdir "C:\FTP\LocalUser\$NombreUsuario" }
 
     # Vincular carpetas públicas y de grupo
-    cmd /c "mklink /d "C:\FTP\LocalUser\$NombreUsuario\publica" "C:\FTP\publica""
-    cmd /c "mklink /d "C:\FTP\LocalUser$NombreUsuario\$Grupo" "C:\FTP\$Grupo""
-    cmd /c "mklink /d "C:\FTP\LocalUser\$NombreUsuario\$NombreUsuario" "C:\FTP\$NombreUsuario""
+    cmd /c mklink /d "C:\FTP\LocalUser\$NombreUsuario\publica" "C:\FTP\publica"
+    cmd /c mklink /d "C:\FTP\LocalUser\$NombreUsuario\$Grupo" "C:\FTP\$Grupo"
+    cmd /c mklink /d "C:\FTP\LocalUser\$NombreUsuario\$NombreUsuario" "C:\FTP\$NombreUsuario"
 
     Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
 
