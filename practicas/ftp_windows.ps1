@@ -32,13 +32,13 @@ cmd /c mklink /d "C:\FTP\LocalUser\Public\publica" "C:\FTP\publica"
 
 # Crear Grupos de Usuarios si no existen
 if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
-    net localgroup "FTP_Reprobados" /add
+    net localgroup "Reprobados" /add
 }
 if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
-    net localgroup "FTP_Recursadores" /add
+    net localgroup "Recursadores" /add
 }
 if (!(Get-LocalGroup -Name "FTP_Publico" -ErrorAction SilentlyContinue)) {
-    net localgroup "FTP_Publico" /add
+    net localgroup "Publico" /add
 }
 
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=3} -PSPath IIS:\ -Location "FTPServidor"
@@ -50,9 +50,9 @@ Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/recursadore
 
 # Asignar permisos específicos a cada grupo con `Add-WebConfiguration`
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTPServidor/publica"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Reprobados";permissions=3} -PSPath IIS:\ -Location "FTPServidor/reprobados"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Recursadores";permissions=3} -PSPath IIS:\ -Location "FTPServidor/recursadores"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Publico";permissions=3} -PSPath IIS:\ -Location "FTPServidor/publica"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="Reprobados";permissions=3} -PSPath IIS:\ -Location "FTPServidor/reprobados"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="Recursadores";permissions=3} -PSPath IIS:\ -Location "FTPServidor/recursadores"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="Publico";permissions=3} -PSPath IIS:\ -Location "FTPServidor/publica"
 
 
 # Deshabilitar SSL en el FTP
@@ -74,8 +74,8 @@ function Crear-UsuarioFTP {
     }
 
     $Grupo = switch (Read-Host "Seleccione el grupo: 1 para Reprobados, 2 para Recursadores") {
-        "1" { "FTP_Reprobados" }
-        "2" { "FTP_Recursadores" }
+        "1" { "Reprobados" }
+        "2" { "Recursadores" }
         default {
             Write-Host "Opción inválida. Debe seleccionar 1 o 2." -ForegroundColor Red
             return
@@ -85,7 +85,7 @@ function Crear-UsuarioFTP {
     $Password = Read-Host "Ingrese contraseña" #-AsSecureString
     net user $NombreUsuario $Password /add
     net localgroup $Grupo $NombreUsuario /add
-    net localgroup "FTP_Publico" $NombreUsuario /add
+    net localgroup "Publico" $NombreUsuario /add
 
     # Crear carpeta del usuario y vincular carpetas públicas y de grupo
     if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
