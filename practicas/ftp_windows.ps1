@@ -83,9 +83,9 @@ function Crear-UsuarioFTP {
     }
 
     $Password = Read-Host "Ingrese contraseña" -AsSecureString
-    New-LocalUser -Name $NombreUsuario -Password $Password
-    Add-LocalGroupMember -Group $Grupo -Member $NombreUsuario
-    Add-LocalGroupMember -Group "FTP_Publico" -Member $NombreUsuario
+    net user $NombreUsuario $Password /add
+    net localgroup $Grupo $NombreUsuario /add
+    net localgroup "FTP_Publico" $NombreUsuario /add
 
     # Crear carpeta del usuario y vincular carpetas públicas y de grupo
     if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
