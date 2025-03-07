@@ -7,24 +7,26 @@ Import-Module WebAdministration
 # Creación de Carpetas
 mkdir C:\FTP
 mkdir C:\FTP\publica
+mkdir C:\FTP\reprobados
+mkdir C:\FTP\recursadores
 mkdir C:\FTP\LocalUser
-mkdir C:\FTP\LocalUser\reprobados
-mkdir C:\FTP\LocalUser\recursadores
+mkdir C:\FTP\LocalUser\Public
 
 # Verificar que las carpetas existen antes de continuar
+if (!(Test-Path "C:\FTP\publica")) { mkdir "C:\FTP\publica" }
+if (!(Test-Path "C:\FTP\reprobados")) { mkdir "C:\FTP\reprobados" }
+if (!(Test-Path "C:\FTP\recursadores")) { mkdir "C:\FTP\recursadores" }
 if (!(Test-Path "C:\FTP\LocalUser")) { mkdir "C:\FTP\LocalUser" }
-if (!(Test-Path "C:\FTP\LocalUser\publica")) { mkdir "C:\FTP\LocalUser\publica" }
-if (!(Test-Path "C:\FTP\LocalUser\reprobados")) { mkdir "C:\FTP\LocalUser\reprobados" }
-if (!(Test-Path "C:\FTP\LocalUser\recursadores")) { mkdir "C:\FTP\LocalUser\recursadores" }
+if (!(Test-Path "C:\FTP\LocalUser\Public")) { mkdir "C:\FTP\LocalUser\Public" }
 
 # Crear el Sitio FTP en IIS
-New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP\LocalUser"
+New-WebFtpSite -Name "FTPServidor" -Port 21 -PhysicalPath "C:\FTP"
 
 # Configuración de autenticación
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.basicAuthentication.enabled -Value 1
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value 1
 
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTPServidor"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=3} -PSPath IIS:\ -Location "FTPServidor"
 
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.userIsolation.mode -Value "IsolateRootDirectoryOnly"
 
@@ -34,6 +36,9 @@ if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
 }
 if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
     net localgroup "FTP_Recursadores" /add
+}
+if (!(Get-LocalGroup -Name "FTP_Publico" -ErrorAction SilentlyContinue)) {
+    net localgroup "FTP_Publico" /add
 }
 
 # Eliminar configuraciones previas en las carpetas
@@ -45,6 +50,7 @@ Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/recursadore
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTPServidor/publica"
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Reprobados";permissions=3} -PSPath IIS:\ -Location "FTPServidor/reprobados"
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Recursadores";permissions=3} -PSPath IIS:\ -Location "FTPServidor/recursadores"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Publico";permissions=3} -PSPath IIS:\ -Location "FTPServidor/publica"
 
 # Deshabilitar SSL en el FTP
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
@@ -75,8 +81,10 @@ function Crear-UsuarioFTP {
     $Password = Read-Host "Ingrese contraseña" -AsSecureString
     New-LocalUser -Name $NombreUsuario -Password $Password
     Add-LocalGroupMember -Group $Grupo -Member $NombreUsuario
+    Add-LocalGroupMember -Group FTP_Publico -Member $NombreUsuario
 
     # Crear carpeta del usuario y vincular carpetas públicas y de grupo
+    if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
     if (!(Test-Path "C:\FTP\LocalUser\$NombreUsuario")) { mkdir "C:\FTP\LocalUser\$NombreUsuario" }
 
     Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
@@ -85,8 +93,9 @@ function Crear-UsuarioFTP {
     Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="$NombreUsuario";permissions=3} -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario"
     
     # Vincular carpetas públicas y de grupo
-    cmd /c "mklink /d "C:\FTP\LocalUser\$NombreUsuario\publica" "C:\FTP\LocalUser\publica""
-    cmd /c "mklink /d "C:\FTP\LocalUser\$NombreUsuario\$Grupo" "C:\FTP\LocalUser\$Grupo""
+    cmd /c "mklink /d "C:\FTP\LocalUser\$NombreUsuario\publica" "C:\FTP\publica""
+    cmd /c "mklink /d "C:\FTP\LocalUser$NombreUsuario\$Grupo" "C:\FTP\$Grupo""
+    cmd /c "mklink /d "C:\FTP\LocalUser\$NombreUsuario\$NombreUsuario" "C:\FTP\$NombreUsuario""
 
     Write-Host "Usuario $NombreUsuario creado en el grupo $Grupo." -ForegroundColor Green
 }
