@@ -52,11 +52,14 @@ Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessT
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Recursadores";permissions=3} -PSPath IIS:\ -Location "FTPServidor/recursadores"
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="FTP_Publico";permissions=3} -PSPath IIS:\ -Location "FTPServidor/publica"
 
+cmd /c "mklink /d "C:\FTP\LocalUser\Public\publica" "C:\FTP\publica""
+
 # Deshabilitar SSL en el FTP
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
 Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
 
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+
 
 # Función para Crear Usuarios FTP
 function Crear-UsuarioFTP {
@@ -81,7 +84,7 @@ function Crear-UsuarioFTP {
     $Password = Read-Host "Ingrese contraseña" -AsSecureString
     New-LocalUser -Name $NombreUsuario -Password $Password
     Add-LocalGroupMember -Group $Grupo -Member $NombreUsuario
-    Add-LocalGroupMember -Group FTP_Publico -Member $NombreUsuario
+    Add-LocalGroupMember -Group "FTP_Publico" -Member $NombreUsuario
 
     # Crear carpeta del usuario y vincular carpetas públicas y de grupo
     if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
