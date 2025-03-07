@@ -77,7 +77,7 @@ function Crear-UsuarioFTP {
     Add-LocalGroupMember -Group $Grupo -Member $NombreUsuario
 
     # Crear carpeta del usuario y vincular carpetas públicas y de grupo
-    if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
+    if (!(Test-Path "C:\FTP\LocalUser\$NombreUsuario")) { mkdir "C:\FTP\LocalUser\$NombreUsuario" }
 
     Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
 
@@ -85,8 +85,8 @@ function Crear-UsuarioFTP {
     Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="$NombreUsuario";permissions=3} -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario"
     
     # Vincular carpetas públicas y de grupo
-    cmd /c "mklink /d "C:\FTP\$NombreUsuario\publica" "C:\FTP\publica""
-    cmd /c "mklink /d "C:\FTP\$NombreUsuario\$Grupo" "C:\FTP\$Grupo""
+    cmd /c "mklink /d "C:\FTP\LocalUser\$NombreUsuario\publica" "C:\FTP\LocalUser\publica""
+    cmd /c "mklink /d "C:\FTP\LocalUser\$NombreUsuario\$Grupo" "C:\FTP\LocalUser\$Grupo""
 
     Write-Host "Usuario $NombreUsuario creado en el grupo $Grupo." -ForegroundColor Green
 }
