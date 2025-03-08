@@ -141,6 +141,8 @@ function Cambiar-GrupoFTP {
     # Asignar permisos al grupo "recursadores"
     Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="$NuevoGrupo";permissions=3} -PSPath IIS:\ -Location "FTPServidor/$NuevoGrupo"
 
+    Restart-Service FTPSVC
+
     Write-Host "Usuario $NombreUsuario ahora pertenece a $NuevoGrupo." -ForegroundColor Green
 }
 
