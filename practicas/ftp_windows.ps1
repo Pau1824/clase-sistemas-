@@ -62,15 +62,79 @@ Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.dataChann
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
 
-# Función para Crear Usuarios FTP
-function Crear-UsuarioFTP {
-    param (
-        [string]$NombreUsuario
-    )
+# Lista de nombres reservados por Windows
+$NombresReservados = @("Administrator", "Guest", "System", "LocalService", "NetworkService", "DefaultAccount")
+
+# Función para validar el nombre de usuario
+function Validar-NombreUsuario {
+    param ([string]$NombreUsuario)
+
+    if ($NombreUsuario.Length -lt 1 -or $NombreUsuario.Length -gt 20) {
+        Write-Host "El nombre de usuario debe tener entre 1 y 20 caracteres." -ForegroundColor Red
+        return $false
+    }
 
     if ($NombreUsuario -match "[^a-zA-Z0-9]") {
-        Write-Host "El nombre de usuario solo puede contener letras y números." -ForegroundColor Red
-        return
+        Write-Host "El nombre de usuario no puede contener caracteres especiales." -ForegroundColor Red
+        return $false
+    }
+
+    if ($NombreUsuario -match "^\d+$") {
+        Write-Host "El nombre de usuario no puede ser solo números, debe incluir al menos una letra." -ForegroundColor Red
+        return $false
+    }
+
+    if ($NombresReservados -contains $NombreUsuario) {
+        Write-Host "El nombre de usuario no puede ser un nombre reservado del sistema." -ForegroundColor Red
+        return $false
+    }
+
+    if (Get-LocalUser -Name $NombreUsuario -ErrorAction SilentlyContinue) {
+        Write-Host "El nombre de usuario ya existe en el sistema, elija otro." -ForegroundColor Red
+        return $false
+    }
+
+    return $true
+}
+
+# Función para validar la contraseña
+function Validar-Contraseña {
+    param ([string]$Password, [string]$NombreUsuario)
+
+    if ($Password.Length -lt 3 -or $Password.Length -gt 14) {
+        Write-Host "La contraseña debe tener entre 3 y 14 caracteres." -ForegroundColor Red
+        return $false
+    }
+
+    if ($Password -match $NombreUsuario) {
+        Write-Host "La contraseña no puede contener el nombre de usuario." -ForegroundColor Red
+        return $false
+    }
+
+    $TieneNumero = $Password -match "\d"
+    $TieneEspecial = $Password -match "[!@#$%^&*(),.?""{}|<>]"
+    $TieneLetra = $Password -cmatch "[A-Za-z]"
+
+    if (-not ($TieneNumero -and $TieneEspecial -and $TieneLetra)) {
+        Write-Host "La contraseña debe incluir al menos un número, un carácter especial y una letra." -ForegroundColor Red
+        return $false
+    }
+
+    return $true
+}
+
+
+# Función para Crear Usuarios FTP
+function Crear-UsuarioFTP {
+    $NombreUsuario = Read-Host "Ingrese el nombre del usuario"
+
+    while (-not (Validar-NombreUsuario -NombreUsuario $NombreUsuario)) {
+        $NombreUsuario = Read-Host "Ingrese un nombre de usuario válido"
+    }
+
+    $Password = Read-Host "Ingrese contraseña" -AsSecureString
+    while (-not (Validar-Contraseña -Password $Password -NombreUsuario $NombreUsuario)) {
+        $Password = Read-Host "Ingrese una contraseña válida" -AsSecureString
     }
 
     $Grupo = switch (Read-Host "Seleccione el grupo: 1 para Reprobados, 2 para Recursadores") {
@@ -82,7 +146,6 @@ function Crear-UsuarioFTP {
         }
     }
 
-    $Password = Read-Host "Ingrese contraseña" #-AsSecureString
     net user $NombreUsuario $Password /add
     net localgroup $Grupo $NombreUsuario /add
     net localgroup "publica" $NombreUsuario /add
@@ -106,9 +169,7 @@ function Crear-UsuarioFTP {
 
 # Función para Cambiar de Grupo a un Usuario
 function Cambiar-GrupoFTP {
-    param (
-        [string]$NombreUsuario
-    )
+    $NombreUsuario = Read-Host "Ingrese el nombre del usuario"
 
     if (-not (Get-LocalUser -Name $NombreUsuario -ErrorAction SilentlyContinue)) {
         Write-Host "Usuario no encontrado." -ForegroundColor Red
@@ -164,18 +225,13 @@ while ($true) {
     $opcion = Read-Host "Seleccione una opción (1-3)"
     
     switch ($opcion) {
-        "1" {
-            $nombreUsuario = Read-Host "Ingrese el nombre del usuario"
-            Crear-UsuarioFTP -NombreUsuario $nombreUsuario
-        }
-        "2" {
-            $nombreUsuario = Read-Host "Ingrese el nombre del usuario"
-            Cambiar-GrupoFTP -NombreUsuario $nombreUsuario
-        }
+        "1" { Crear-UsuarioFTP }
+        "2" { Cambiar-GrupoFTP }
         "3" {
             Write-Host "Saliendo..." -ForegroundColor Yellow
-            break
+            $ejecutando = $false
         }
+
         default {
             Write-Host "Opción inválida. Intente de nuevo." -ForegroundColor Red
         }
