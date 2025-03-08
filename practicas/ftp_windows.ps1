@@ -141,17 +141,18 @@ function Crear-UsuarioFTP {
     $NombreUsuario = Validar-NombreUsuario  # Se asegura que sea válido antes de continuar
     $Password = Validar-Contraseña -NombreUsuario $NombreUsuario  # Se asegura que la contraseña sea válida
 
-    $Grupo = $null
     while ($true) {
         $opcionGrupo = Read-Host "Seleccione el grupo: 1 para Reprobados, 2 para Recursadores"
         
-        switch ($opcionGrupo) {
-            "1" { $Grupo = "reprobados"; break }
-            "2" { $Grupo = "recursadores"; break }
-            default {
-                Write-Host "Error: Debe seleccionar 1 para Reprobados o 2 para Recursadores." -ForegroundColor Red
-                continue  # Vuelve a pedir la selección del grupo
-            }
+        if ($opcionGrupo -eq "1") {
+            $Grupo = "reprobados"
+            break  # Salimos del bucle porque ya es válido
+        } elseif ($opcionGrupo -eq "2") {
+            $Grupo = "recursadores"
+            break  # Salimos del bucle porque ya es válido
+        } else {
+            Write-Host "Error: Debe seleccionar 1 para Reprobados o 2 para Recursadores." -ForegroundColor Red
+            continue  # Repite la selección del grupo
         }
     }
 
