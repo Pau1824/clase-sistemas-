@@ -103,29 +103,35 @@ function Validar-NombreUsuario {
 function Validar-Contraseña {
     param ([string]$NombreUsuario)
 
-    if ($Password.Length -lt 3 -or $Password.Length -gt 14) {
-        Write-Host "Error: La contraseña debe tener entre 3 y 14 caracteres." -ForegroundColor Red
-        $Password = Read-Host "Ingrese una nueva contraseña"
-        continue  # Repite la validación
+    while ($true) {
+        $Password = Read-Host "Ingrese contraseña" -AsSecureString
+
+        if ($Password -eq "") {
+            Write-Host "Error: La contraseña no puede estar vacía." -ForegroundColor Red
+            continue
+        }
+
+        if ($Password.Length -lt 3 -or $Password.Length -gt 14) {
+            Write-Host "Error: La contraseña debe tener entre 3 y 14 caracteres." -ForegroundColor Red
+            continue
+        }
+
+        if ($Password -match $NombreUsuario) {
+            Write-Host "Error: La contraseña no puede contener el nombre de usuario." -ForegroundColor Red
+            continue
+        }
+
+        $TieneNumero = $Password -match "\d"
+        $TieneEspecial = $Password -match "[!@#$%^&*(),.?""{}|<>]"
+        $TieneLetra = $Password -cmatch "[A-Za-z]"
+
+        if (-not ($TieneNumero -and $TieneEspecial -and $TieneLetra)) {
+            Write-Host "Error: La contraseña debe incluir al menos un número, un carácter especial y una letra." -ForegroundColor Red
+            continue
+        }
+
+        return $Password 
     }
-
-    if ($Password -match $NombreUsuario) {
-        Write-Host "Error: La contraseña no puede contener el nombre de usuario." -ForegroundColor Red
-        $Password = Read-Host "Ingrese una nueva contraseña"
-        continue
-    }
-
-    $TieneNumero = $Password -match "\d"
-    $TieneEspecial = $Password -match "[!@#$%^&*(),.?""{}|<>]"
-    $TieneLetra = $Password -cmatch "[A-Za-z]"
-
-    if (-not ($TieneNumero -and $TieneEspecial -and $TieneLetra)) {
-        Write-Host "Error: La contraseña debe incluir al menos un número, un carácter especial y una letra." -ForegroundColor Red
-        $Password = Read-Host "Ingrese una nueva contraseña"
-        continue
-    }
-
-    return $Password 
 }
 
 
