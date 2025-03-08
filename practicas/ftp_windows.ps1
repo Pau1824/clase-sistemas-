@@ -31,14 +31,14 @@ Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.userIsolation.mode -Va
 cmd /c mklink /d "C:\FTP\LocalUser\Public\publica" "C:\FTP\publica"
 
 # Crear Grupos de Usuarios si no existen
-if (!(Get-LocalGroup -Name "FTP_Reprobados" -ErrorAction SilentlyContinue)) {
-    net localgroup "Reprobados" /add
+if (!(Get-LocalGroup -Name "reprobados" -ErrorAction SilentlyContinue)) {
+    net localgroup "reprobados" /add
 }
-if (!(Get-LocalGroup -Name "FTP_Recursadores" -ErrorAction SilentlyContinue)) {
-    net localgroup "Recursadores" /add
+if (!(Get-LocalGroup -Name "recursadores" -ErrorAction SilentlyContinue)) {
+    net localgroup "recursadores" /add
 }
-if (!(Get-LocalGroup -Name "FTP_Publico" -ErrorAction SilentlyContinue)) {
-    net localgroup "Publico" /add
+if (!(Get-LocalGroup -Name "publica" -ErrorAction SilentlyContinue)) {
+    net localgroup "publica" /add
 }
 
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=3} -PSPath IIS:\ -Location "FTPServidor"
@@ -50,9 +50,9 @@ Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/recursadore
 
 # Asignar permisos específicos a cada grupo con `Add-WebConfiguration`
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTPServidor/publica"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="Reprobados";permissions=3} -PSPath IIS:\ -Location "FTPServidor/reprobados"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="Recursadores";permissions=3} -PSPath IIS:\ -Location "FTPServidor/recursadores"
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="Publico";permissions=3} -PSPath IIS:\ -Location "FTPServidor/publica"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="reprobados";permissions=3} -PSPath IIS:\ -Location "FTPServidor/reprobados"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="recursadores";permissions=3} -PSPath IIS:\ -Location "FTPServidor/recursadores"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="publica";permissions=3} -PSPath IIS:\ -Location "FTPServidor/publica"
 
 
 # Deshabilitar SSL en el FTP
@@ -74,8 +74,8 @@ function Crear-UsuarioFTP {
     }
 
     $Grupo = switch (Read-Host "Seleccione el grupo: 1 para Reprobados, 2 para Recursadores") {
-        "1" { "Reprobados" }
-        "2" { "Recursadores" }
+        "1" { "reprobados" }
+        "2" { "recursadores" }
         default {
             Write-Host "Opción inválida. Debe seleccionar 1 o 2." -ForegroundColor Red
             return
@@ -85,7 +85,7 @@ function Crear-UsuarioFTP {
     $Password = Read-Host "Ingrese contraseña" #-AsSecureString
     net user $NombreUsuario $Password /add
     net localgroup $Grupo $NombreUsuario /add
-    net localgroup "Publico" $NombreUsuario /add
+    net localgroup "publica" $NombreUsuario /add
 
     # Crear carpeta del usuario y vincular carpetas públicas y de grupo
     if (!(Test-Path "C:\FTP\$NombreUsuario")) { mkdir "C:\FTP\$NombreUsuario" }
@@ -115,22 +115,22 @@ function Cambiar-GrupoFTP {
         return
     }
 
-    $GrupoActual = if ((Get-LocalGroupMember -Group "FTP_Reprobados" -Member $NombreUsuario -ErrorAction SilentlyContinue)) {
-        "FTP_Reprobados"
-    } elseif ((Get-LocalGroupMember -Group "FTP_Recursadores" -Member $NombreUsuario -ErrorAction SilentlyContinue)) {
-        "FTP_Recursadores"
+    $GrupoActual = if ((Get-LocalGroupMember -Group "reprobados" -Member $NombreUsuario -ErrorAction SilentlyContinue)) {
+        "reprobados"
+    } elseif ((Get-LocalGroupMember -Group "recursadores" -Member $NombreUsuario -ErrorAction SilentlyContinue)) {
+        "recursadores"
     } else {
         Write-Host "El usuario no pertenece a ningún grupo." -ForegroundColor Red
-        return
+        return 
     }
 
-    $NuevoGrupo = if ($GrupoActual -eq "FTP_Reprobados") { "FTP_Recursadores" } else { "FTP_Reprobados" }
+    $NuevoGrupo = if ($GrupoActual -eq "reprobados") { "recursadores" } else { "reprobados" }
 
     Remove-LocalGroupMember -Group $GrupoActual -Member $NombreUsuario
-    Add-LocalGroupMember -Group $NuevoGrupo -Member $NombreUsuario
+    net localgroup $NuevoGrupo $NombreUsuario /add
 
-    Remove-Item "C:\FTP\$NombreUsuario\grupo" -Force
-    cmd.exe /c "mklink /d "C:\FTP\$NombreUsuario\grupo" "C:\FTP\$NuevoGrupo""
+    Remove-Item "C:\FTP\LocalUser\$NombreUsuario\$GrupoActual" -Force
+    cmd.exe /c mklink /d "C:\FTP\LocalUser\$NombreUsuario\$NuevoGrupo" "C:\FTP\$NuevoGrupo"
 
     # Actualizar permisos en IIS
     Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
