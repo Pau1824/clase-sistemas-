@@ -121,38 +121,38 @@ validar_nombre_usuario() {
 }
 
 # Función para validar la contraseña
-validar_contraseña() {
+validar_contrasena() {
     local nombre_usuario=$1
     while true; do
-        read -s -p "Ingrese contraseña: " contraseña
+        read -s -p "Ingrese contraseña: " contrasena
         echo
 
-        if [[ ${#contraseña} -lt 3 || ${#contraseña} -gt 14 ]]; then
+        if [[ ${#contrasena} -lt 3 || ${#contrasena} -gt 14 ]]; then
             echo "Error: La contraseña debe tener entre 3 y 14 caracteres."
             continue
         fi
 
-        if [[ "$contraseña" == *"$nombre_usuario"* ]]; then
+        if [[ "$contrasena" == *"$nombre_usuario"* ]]; then
             echo "Error: La contraseña no puede contener el nombre de usuario."
             continue
         fi
 
-        if ! [[ "$contraseña" =~ [0-9] ]]; then
+        if ! [[ "$contrasena" =~ [0-9] ]]; then
             echo "Error: La contraseña debe contener al menos un número."
             continue
         fi
 
-        if ! [[ "$contraseña" =~ [A-Za-z] ]]; then
+        if ! [[ "$contrasena" =~ [A-Za-z] ]]; then
             echo "Error: La contraseña debe contener al menos una letra."
             continue
         fi
 
-        if ! [[ "$contraseña" =~ [\!\@\#\$\%\^\&\*\(\)\_\-\+\=\.\,\<\>\?\~\`] ]]; then
+        if ! [[ "$contrasena" =~ [\!\@\#\$\%\^\&\*\(\)\_\-\+\=\.\,\<\>\?\~\`] ]]; then
             echo "Error: La contraseña debe contener al menos un carácter especial."
             continue
         fi
 
-        echo "$contraseña"
+        echo "$contrasena"
         return
     done
 }
@@ -175,12 +175,12 @@ seleccionar_grupo() {
 # Función para crear usuario
 crear_usuario() {
     nombre=$(validar_nombre_usuario)
-    contraseña=$(validar_contraseña "$nombre")
+    contrasena=$(validar_contrasena "$nombre")
     grupo=$(seleccionar_grupo)
     
     # Crear usuario y asignar contraseña
     sudo adduser --disabled-password --gecos "" "$nombre"
-    echo "$nombre:$contraseña" | sudo chpasswd
+    echo "$nombre:$contrasena" | sudo chpasswd
     
     # Crear carpeta específica del usuario
     sudo mkdir -p "/srv/ftp/$nombre"
