@@ -239,7 +239,7 @@ while ($true) {
         "2" { Cambiar-GrupoFTP }
         "3" {
             Write-Host "Saliendo..." -ForegroundColor Yellow
-            $ejecutando = $false
+            exit
         }
 
         default {
