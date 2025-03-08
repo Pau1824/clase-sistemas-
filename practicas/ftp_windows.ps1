@@ -104,7 +104,7 @@ function Validar-Contraseña {
     param ([string]$NombreUsuario)
 
     while ($true) {
-        $Password = Read-Host "Ingrese contraseña" -AsSecureString
+        $Password = Read-Host "Ingrese contraseña"
 
         if ($Password -eq "") {
             Write-Host "Error: La contraseña no puede estar vacía." -ForegroundColor Red
@@ -116,17 +116,18 @@ function Validar-Contraseña {
             continue
         }
 
-        if ($Password -match $NombreUsuario) {
+        if ($Password -match [regex]::Escape($NombreUsuario)) {
             Write-Host "Error: La contraseña no puede contener el nombre de usuario." -ForegroundColor Red
             continue
         }
 
-        $TieneNumero = $Password -match "\d"
-        $TieneEspecial = $Password -match "[!@#$%^&*(),.?""{}|<>]"
-        $TieneLetra = $Password -cmatch "[A-Za-z]"
+        # Verifica los requisitos de la contraseña
+        $TieneNumero = $Password -cmatch "\d"  # Requiere al menos un número
+        $TieneEspecial = $Password -cmatch "[!@#$%^&*(),.?""{}|<>]"  # Requiere un carácter especial
+        $TieneLetra = $Password -cmatch "[A-Za-z]"  # Requiere una letra (mayúscula o minúscula)
 
-        if (-not ($TieneNumero -and $TieneEspecial -and $TieneLetra)) {
-            Write-Host "Error: La contraseña debe incluir al menos un número, un carácter especial y una letra." -ForegroundColor Red
+        if (-not $TieneNumero -or -not $TieneEspecial -or -not $TieneLetra) {
+            Write-Host "Error: La contraseña debe contener al menos: un número, un carácter especial y una letra." -ForegroundColor Red
             continue
         }
 
