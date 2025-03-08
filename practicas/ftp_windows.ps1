@@ -67,48 +67,52 @@ $NombresReservados = @("Administrator", "Guest", "System", "LocalService", "Netw
 
 # Función para validar el nombre de usuario
 function Validar-NombreUsuario {
-    param ([string]$NombreUsuario)
+    while ($true) {
+        $NombreUsuario = Read-Host "Ingrese el nombre del usuario"
 
-    if ($NombreUsuario.Length -lt 1 -or $NombreUsuario.Length -gt 20) {
-        Write-Host "El nombre de usuario debe tener entre 1 y 20 caracteres." -ForegroundColor Red
-        return $false
+        if ($NombreUsuario.Length -lt 1 -or $NombreUsuario.Length -gt 20) {
+            Write-Host "Error: El nombre de usuario debe tener entre 1 y 20 caracteres." -ForegroundColor Red
+            continue
+        }
+
+        if ($NombreUsuario -match "[^a-zA-Z0-9]") {
+            Write-Host "Error: El nombre de usuario no puede contener caracteres especiales." -ForegroundColor Red
+            continue
+        }
+
+        if ($NombreUsuario -match "^\d+$") {
+            Write-Host "Error: El nombre de usuario no puede ser solo números, debe incluir al menos una letra." -ForegroundColor Red
+            continue
+        }
+
+        if ($NombresReservados -contains $NombreUsuario) {
+            Write-Host "Error: El nombre de usuario no puede ser un nombre reservado del sistema." -ForegroundColor Red
+            continue
+        }
+
+        if (Get-LocalUser -Name $NombreUsuario -ErrorAction SilentlyContinue) {
+            Write-Host "Error: El nombre de usuario ya existe en el sistema, elija otro." -ForegroundColor Red
+            continue
+        }
+
+        return $NombreUsuario  # Si es válido, lo retorna
     }
-
-    if ($NombreUsuario -match "[^a-zA-Z0-9]") {
-        Write-Host "El nombre de usuario no puede contener caracteres especiales." -ForegroundColor Red
-        return $false
-    }
-
-    if ($NombreUsuario -match "^\d+$") {
-        Write-Host "El nombre de usuario no puede ser solo números, debe incluir al menos una letra." -ForegroundColor Red
-        return $false
-    }
-
-    if ($NombresReservados -contains $NombreUsuario) {
-        Write-Host "El nombre de usuario no puede ser un nombre reservado del sistema." -ForegroundColor Red
-        return $false
-    }
-
-    if (Get-LocalUser -Name $NombreUsuario -ErrorAction SilentlyContinue) {
-        Write-Host "El nombre de usuario ya existe en el sistema, elija otro." -ForegroundColor Red
-        return $false
-    }
-
-    return $true
 }
 
 # Función para validar la contraseña
 function Validar-Contraseña {
-    param ([string]$Password, [string]$NombreUsuario)
+    param ([string]$NombreUsuario)
 
     if ($Password.Length -lt 3 -or $Password.Length -gt 14) {
-        Write-Host "La contraseña debe tener entre 3 y 14 caracteres." -ForegroundColor Red
-        return $false
+        Write-Host "Error: La contraseña debe tener entre 3 y 14 caracteres." -ForegroundColor Red
+        $Password = Read-Host "Ingrese una nueva contraseña"
+        continue  # Repite la validación
     }
 
     if ($Password -match $NombreUsuario) {
-        Write-Host "La contraseña no puede contener el nombre de usuario." -ForegroundColor Red
-        return $false
+        Write-Host "Error: La contraseña no puede contener el nombre de usuario." -ForegroundColor Red
+        $Password = Read-Host "Ingrese una nueva contraseña"
+        continue
     }
 
     $TieneNumero = $Password -match "\d"
@@ -116,34 +120,30 @@ function Validar-Contraseña {
     $TieneLetra = $Password -cmatch "[A-Za-z]"
 
     if (-not ($TieneNumero -and $TieneEspecial -and $TieneLetra)) {
-        Write-Host "La contraseña debe incluir al menos un número, un carácter especial y una letra." -ForegroundColor Red
-        return $false
+        Write-Host "Error: La contraseña debe incluir al menos un número, un carácter especial y una letra." -ForegroundColor Red
+        $Password = Read-Host "Ingrese una nueva contraseña"
+        continue
     }
 
-    return $true
+    return $Password 
 }
 
 
 # Función para Crear Usuarios FTP
 function Crear-UsuarioFTP {
-    $NombreUsuario = Read-Host "Ingrese el nombre del usuario"
+    $NombreUsuario = Validar-NombreUsuario  # Se asegura que sea válido antes de continuar
+    $Password = Validar-Contraseña -NombreUsuario $NombreUsuario  # Se asegura que la contraseña sea válida
 
-    while (-not (Validar-NombreUsuario -NombreUsuario $NombreUsuario)) {
-        $NombreUsuario = Read-Host "Ingrese un nombre de usuario válido"
-    }
-
-    $Password = Read-Host "Ingrese contraseña" -AsSecureString
-    while (-not (Validar-Contraseña -Password $Password -NombreUsuario $NombreUsuario)) {
-        $Password = Read-Host "Ingrese una contraseña válida" -AsSecureString
-    }
-
-    $Grupo = switch (Read-Host "Seleccione el grupo: 1 para Reprobados, 2 para Recursadores") {
-        "1" { "reprobados" }
-        "2" { "recursadores" }
-        default {
-            Write-Host "Opción inválida. Debe seleccionar 1 o 2." -ForegroundColor Red
-            return
+    while ($true) {
+        $Grupo = switch (Read-Host "Seleccione el grupo: 1 para Reprobados, 2 para Recursadores") {
+            "1" { "reprobados" }
+            "2" { "recursadores" }
+            default {
+                Write-Host "Opción inválida. Debe seleccionar 1 o 2." -ForegroundColor Red
+                continue
+            }
         }
+        break  # Sale del bucle si el grupo es válido
     }
 
     net user $NombreUsuario $Password /add
