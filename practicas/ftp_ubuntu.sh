@@ -83,25 +83,104 @@ sudo chmod 777 /srv/ftp/recursadores
 
 echo "Carpetas FTP creadas."
 
+NOMBRES_RESERVADOS=("root" "daemon" "bin" "sys" "sync" "games" "man" "lp" "mail" "news" "uucp" "proxy" "www-data" "backup" "list" "irc" "nobody" "systemd-network")
+
+# Función para validar el nombre de usuario
+validar_nombre_usuario() {
+    while true; do
+        read -p "Ingrese el nombre del usuario: " nombre
+
+        if [[ ${#nombre} -lt 1 || ${#nombre} -gt 20 ]]; then
+            echo "Error: El nombre de usuario debe tener entre 1 y 20 caracteres."
+            continue
+        fi
+
+        if [[ "$nombre" =~ [^a-zA-Z0-9] ]]; then
+            echo "Error: El nombre de usuario no puede contener caracteres especiales."
+            continue
+        fi
+
+        if [[ "$nombre" =~ ^[0-9]+$ ]]; then
+            echo "Error: El nombre de usuario no puede ser solo números, debe incluir al menos una letra."
+            continue
+        fi
+
+        if [[ " ${NOMBRES_RESERVADOS[@]} " =~ " $nombre " ]]; then
+            echo "Error: El nombre de usuario no puede ser un nombre reservado del sistema."
+            continue
+        fi
+
+        if id "$nombre" &>/dev/null; then
+            echo "Error: El nombre de usuario ya existe en el sistema, elija otro."
+            continue
+        fi
+
+        echo "$nombre"
+        return
+    done
+}
+
+# Función para validar la contraseña
+validar_contraseña() {
+    local nombre_usuario=$1
+    while true; do
+        read -s -p "Ingrese contraseña: " contraseña
+        echo
+
+        if [[ ${#contraseña} -lt 3 || ${#contraseña} -gt 14 ]]; then
+            echo "Error: La contraseña debe tener entre 3 y 14 caracteres."
+            continue
+        fi
+
+        if [[ "$contraseña" == *"$nombre_usuario"* ]]; then
+            echo "Error: La contraseña no puede contener el nombre de usuario."
+            continue
+        fi
+
+        if ! [[ "$contraseña" =~ [0-9] ]]; then
+            echo "Error: La contraseña debe contener al menos un número."
+            continue
+        fi
+
+        if ! [[ "$contraseña" =~ [A-Za-z] ]]; then
+            echo "Error: La contraseña debe contener al menos una letra."
+            continue
+        fi
+
+        if ! [[ "$contraseña" =~ [\!\@\#\$\%\^\&\*\(\)\_\-\+\=\.\,\<\>\?\~\`] ]]; then
+            echo "Error: La contraseña debe contener al menos un carácter especial."
+            continue
+        fi
+
+        echo "$contraseña"
+        return
+    done
+}
+
+seleccionar_grupo() {
+    while true; do
+        echo "Seleccione el grupo:"
+        echo "1. Reprobados"
+        echo "2. Recursadores"
+        read -p "Seleccione una opción: " grupo_opcion
+
+        case "$grupo_opcion" in
+            1) echo "reprobados"; return ;;
+            2) echo "recursadores"; return ;;
+            *) echo "Error: Debe seleccionar 1 o 2." ;;
+        esac
+    done
+}
+
 # Función para crear usuario
 crear_usuario() {
-    read -p "Ingrese el nombre del usuario: " nombre
-    echo "Seleccione el grupo:"
-    echo "1. Reprobado"
-    echo "2. Recursador"
-    read -p "Seleccione una opción: " grupo_opcion
-    
-    if [[ "$grupo_opcion" == "1" ]]; then
-        grupo="reprobados"
-    elif [[ "$grupo_opcion" == "2" ]]; then
-        grupo="recursadores"
-    else
-        echo "Opción no válida."
-        return
-    fi
+    nombre=$(validar_nombre_usuario)
+    contraseña=$(validar_contraseña "$nombre")
+    grupo=$(seleccionar_grupo)
     
     # Crear usuario y asignar contraseña
-     sudo adduser "$nombre"
+    sudo adduser --disabled-password --gecos "" "$nombre"
+    echo "$nombre:$contraseña" | sudo chpasswd
     
     # Crear carpeta específica del usuario
     sudo mkdir -p "/srv/ftp/$nombre"
