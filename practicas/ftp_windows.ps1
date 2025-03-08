@@ -136,6 +136,11 @@ function Cambiar-GrupoFTP {
     Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
     Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="$NombreUsuario";permissions=3} -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario"
 
+    # Eliminar cualquier configuración previa en IIS
+    Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/$NuevoGrupo" -Filter "system.ftpServer/security/authorization" -Name "."
+    # Asignar permisos al grupo "recursadores"
+    Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="$NuevoGrupo";permissions=3} -PSPath IIS:\ -Location "FTPServidor/$NuevoGrupo"
+
     Write-Host "Usuario $NombreUsuario ahora pertenece a $NuevoGrupo." -ForegroundColor Green
 }
 
