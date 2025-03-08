@@ -133,8 +133,8 @@ function Cambiar-GrupoFTP {
     cmd.exe /c mklink /d "C:\FTP\LocalUser\$NombreUsuario\$NuevoGrupo" "C:\FTP\$NuevoGrupo"
 
     # Actualizar permisos en IIS
-    Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTP/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
-    Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="$NombreUsuario";permissions=3} -PSPath IIS:\ -Location "FTP/$NombreUsuario"
+    Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario" -Filter "system.ftpServer/security/authorization" -Name "."
+    Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="$NombreUsuario";permissions=3} -PSPath IIS:\ -Location "FTPServidor/$NombreUsuario"
 
     Write-Host "Usuario $NombreUsuario ahora pertenece a $NuevoGrupo." -ForegroundColor Green
 }
