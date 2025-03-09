@@ -124,7 +124,7 @@ validar_nombre_usuario() {
 validar_contrasena() {
     local nombre_usuario=$1
     while true; do
-        read -s -p "Ingrese contraseña: " contrasena
+        read -p "Ingrese contraseña: " contrasena
 
         # Validar longitud de la contraseña
         if [[ ${#contrasena} -lt 3 || ${#contrasena} -gt 14 ]]; then
@@ -172,6 +172,7 @@ validar_contrasena() {
 
 
 seleccionar_grupo() {
+    local grupo_opcion 
     while true; do
         echo -e "\nSeleccione el grupo:"
         echo "1. Reprobados"
@@ -192,9 +193,15 @@ crear_usuario() {
     contrasena=$(validar_contrasena "$nombre")  #Luego la contraseña
     grupo=$(seleccionar_grupo)
     
-    # Crear usuario y asignar contraseña
-    sudo adduser --disabled-password --gecos "" "$nombre"
-    echo "$nombre:$contrasena" | sudo chpasswd
+    # Crear usuario correctamente
+    sudo adduser --disabled-password --gecos "" "$nombre" || {
+        echo "Error: No se pudo crear el usuario."
+        return
+    }
+    echo "$nombre:$contrasena" | sudo chpasswd || {
+        echo "Error: No se pudo asignar la contraseña."
+        return
+    }
     
     # Crear carpeta específica del usuario
     sudo mkdir -p "/srv/ftp/$nombre"
