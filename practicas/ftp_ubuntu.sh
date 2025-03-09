@@ -124,43 +124,47 @@ validar_nombre_usuario() {
 validar_contrasena() {
     local nombre_usuario=$1
     while true; do
-        echo  
-        read -s -p "Ingrese contraseña: " contrasena  # Ahora imprime bien
-        echo  
+        read -s -p "Ingrese contraseña: " contrasena
 
+        # Validar longitud de la contraseña
         if [[ ${#contrasena} -lt 3 || ${#contrasena} -gt 14 ]]; then
             echo "Error: La contraseña debe tener entre 3 y 14 caracteres."
             continue
         fi
 
+        # Validar que la contraseña no contenga el nombre de usuario
         if [[ "$contrasena" == *"$nombre_usuario"* ]]; then
             echo "Error: La contraseña no puede contener el nombre de usuario."
             continue
         fi
 
+        # Reiniciar variables de validación
+        tiene_numero=1
+        tiene_letra=1
+        tiene_especial=1
+
+        # Verificar si contiene número
         if [[ "$contrasena" =~ [0-9] ]]; then
             tiene_numero=0
-        else
-            tiene_numero=1
         fi
 
+        # Verificar si contiene letra (mayúscula o minúscula)
         if [[ "$contrasena" =~ [A-Za-z] ]]; then
             tiene_letra=0
-        else
-            tiene_letra=1
         fi
 
+        # Verificar si contiene al menos un carácter especial
         if [[ "$contrasena" =~ [\!\@\#\$\%\^\&\*\(\)\,\.\?\"\'\{\}\|\<\>] ]]; then
             tiene_especial=0
-        else
-            tiene_especial=1
         fi
 
+        # Si falta algún requisito, mostrar error
         if [[ $tiene_numero -ne 0 || $tiene_letra -ne 0 || $tiene_especial -ne 0 ]]; then
             echo "Error: La contraseña debe contener al menos un número, una letra y un carácter especial."
             continue
         fi
 
+        # Si pasa todas las validaciones, retornamos la contraseña
         echo "$contrasena"
         return
     done
