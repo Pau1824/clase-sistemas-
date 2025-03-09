@@ -180,11 +180,12 @@ seleccionar_grupo() {
         read -p "Seleccione una opción: " grupo_opcion
 
         case "$grupo_opcion" in
-            1) echo "reprobados"; return ;;
-            2) echo "recursadores"; return ;;
+            1) grupo="reprobados"; break ;;
+            2) grupo="recursadores"; break ;;
             *) echo "Error: Debe seleccionar 1 o 2." ;;
         esac
     done
+    echo "$grupo"
 }
 
 # Función para crear usuario
@@ -193,15 +194,19 @@ crear_usuario() {
     contrasena=$(validar_contrasena "$nombre")  #Luego la contraseña
     grupo=$(seleccionar_grupo)
     
-    # Crear usuario correctamente
-    sudo adduser --disabled-password --gecos "" "$nombre" || {
+    echo "Creando usuario '$nombre' en el grupo '$grupo'..."
+
+    # Verificar que adduser se ejecute correctamente
+    if ! sudo adduser --disabled-password --gecos "" "$nombre"; then
         echo "Error: No se pudo crear el usuario."
         return
-    }
-    echo "$nombre:$contrasena" | sudo chpasswd || {
+    fi
+
+    # Verificar que la contraseña se asigna correctamente
+    if ! echo "$nombre:$contrasena" | sudo chpasswd; then
         echo "Error: No se pudo asignar la contraseña."
         return
-    }
+    fi
     
     # Crear carpeta específica del usuario
     sudo mkdir -p "/srv/ftp/$nombre"
