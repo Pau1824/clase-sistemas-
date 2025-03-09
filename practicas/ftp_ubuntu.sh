@@ -124,27 +124,23 @@ validar_nombre_usuario() {
 validar_contrasena() {
     local nombre_usuario=$1
     while true; do
-        read -p "Ingrese contraseña: " contrasena
+        echo  
+        read -s -p "Ingrese contraseña: " contrasena  # Ahora imprime bien
+        echo  
 
         if [[ ${#contrasena} -lt 3 || ${#contrasena} -gt 14 ]]; then
             echo "Error: La contraseña debe tener entre 3 y 14 caracteres."
             continue
         fi
 
-        echo "$contrasena" | grep -q "$nombre_usuario"
-        if [[ $? -eq 0 ]]; then
+        if [[ "$contrasena" == *"$nombre_usuario"* ]]; then
             echo "Error: La contraseña no puede contener el nombre de usuario."
             continue
         fi
 
-        echo "$contrasena" | grep -q "[0-9]"
-        tiene_numero=$?
-
-        echo "$contrasena" | grep -q "[A-Za-z]"
-        tiene_letra=$?
-
-        echo "$contrasena" | grep -q "[!@#$%^&*(),.?\"{}|<>]"
-        tiene_especial=$?
+        [[ "$contrasena" =~ [0-9] ]] && tiene_numero=0 || tiene_numero=1
+        [[ "$contrasena" =~ [A-Za-z] ]] && tiene_letra=0 || tiene_letra=1
+        [[ "$contrasena" =~ [!@#$%^&*(),.?\"{}|<>] ]] && tiene_especial=0 || tiene_especial=1
 
         if [[ $tiene_numero -ne 0 || $tiene_letra -ne 0 || $tiene_especial -ne 0 ]]; then
             echo "Error: La contraseña debe contener al menos un número, una letra y un carácter especial."
@@ -156,6 +152,7 @@ validar_contrasena() {
     done
 }
 
+
 seleccionar_grupo() {
     while true; do
         echo "Seleccione el grupo:"
@@ -163,22 +160,18 @@ seleccionar_grupo() {
         echo "2. Recursadores"
         read -p "Seleccione una opción: " grupo_opcion
 
-        if [[ "$grupo_opcion" == "1" ]]; then
-            echo "reprobados"
-            return
-        elif [[ "$grupo_opcion" == "2" ]]; then
-            echo "recursadores"
-            return
-        else
-            echo "Error: Debe seleccionar 1 o 2."
-        fi
+        case "$grupo_opcion" in
+            1) echo "reprobados"; return ;;
+            2) echo "recursadores"; return ;;
+            *) echo "Error: Debe seleccionar 1 o 2." ;;
+        esac
     done
 }
 
 # Función para crear usuario
 crear_usuario() {
-    nombre=$(validar_nombre_usuario)
-    contrasena=$(validar_contrasena "$nombre")
+    nombre=$(validar_nombre_usuario)  #Pide primero el nombre
+    contrasena=$(validar_contrasena "$nombre")  #Luego la contraseña
     grupo=$(seleccionar_grupo)
     
     # Crear usuario y asignar contraseña
@@ -246,7 +239,7 @@ cambiar_grupo() {
 
 # Menú principal con formato mejorado
 while true; do
-    echo -e "\n=== 📂 Menú de Administración FTP ==="
+    echo -e "\n=== Menú de Administración FTP ==="
     echo "1. Crear usuario"
     echo "2. Cambiar de grupo"
     echo "3. Salir"
