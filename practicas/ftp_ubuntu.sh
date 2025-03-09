@@ -173,6 +173,8 @@ validar_contrasena() {
 
 seleccionar_grupo() {
     local grupo_opcion 
+    grupo=""  # Asegurar que esté vacía antes de usar
+
     while true; do
         echo -e "\nSeleccione el grupo:"
         echo "1. Reprobados"
@@ -180,20 +182,26 @@ seleccionar_grupo() {
         read -p "Seleccione una opción: " grupo_opcion
 
         case "$grupo_opcion" in
-            1) grupo="reprobados"; break ;;
-            2) grupo="recursadores"; break ;;
+            1) grupo="reprobados"; return ;;  # Usamos `return` para salir correctamente
+            2) grupo="recursadores"; return ;;
             *) echo "Error: Debe seleccionar 1 o 2." ;;
         esac
     done
-    echo "$grupo"
 }
 
 # Función para crear usuario
 crear_usuario() {
-    nombre=$(validar_nombre_usuario)  #Pide primero el nombre
-    contrasena=$(validar_contrasena "$nombre")  #Luego la contraseña
-    grupo=$(seleccionar_grupo)
-    
+    nombre=$(validar_nombre_usuario)  # Pide primero el nombre
+    contrasena=$(validar_contrasena "$nombre")  # Luego la contraseña
+
+    seleccionar_grupo  # Llamamos la función para obtener el grupo
+
+    # Validar si la variable `grupo` tiene un valor válido
+    if [[ -z "$grupo" ]]; then
+        echo "Error: No se seleccionó un grupo válido."
+        return
+    fi
+
     echo "Creando usuario '$nombre' en el grupo '$grupo'..."
 
     # Verificar que adduser se ejecute correctamente
