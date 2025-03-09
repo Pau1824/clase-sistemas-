@@ -138,9 +138,23 @@ validar_contrasena() {
             continue
         fi
 
-        [[ "$contrasena" =~ [0-9] ]] && tiene_numero=0 || tiene_numero=1
-        [[ "$contrasena" =~ [A-Za-z] ]] && tiene_letra=0 || tiene_letra=1
-        [[ "$contrasena" =~ [\!\@\#\$\%\^\&\*\(\)\,\.\?\"\'\{\}\|\<\>] ]] && tiene_especial=0 || tiene_especial=1
+        if [[ "$contrasena" =~ [0-9] ]]; then
+            tiene_numero=0
+        else
+            tiene_numero=1
+        fi
+
+        if [[ "$contrasena" =~ [A-Za-z] ]]; then
+            tiene_letra=0
+        else
+            tiene_letra=1
+        fi
+
+        if [[ "$contrasena" =~ [\!\@\#\$\%\^\&\*\(\)\,\.\?\"\'\{\}\|\<\>] ]]; then
+            tiene_especial=0
+        else
+            tiene_especial=1
+        fi
 
         if [[ $tiene_numero -ne 0 || $tiene_letra -ne 0 || $tiene_especial -ne 0 ]]; then
             echo "Error: La contraseña debe contener al menos un número, una letra y un carácter especial."
