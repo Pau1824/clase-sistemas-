@@ -124,15 +124,17 @@ validar_nombre_usuario() {
 validar_contrasena() {
     local nombre_usuario=$1
     while true; do
+        echo  # Salto de línea antes de ingresar la contraseña
         read -s -p "Ingrese contraseña: " contrasena
-        echo  # Hace un salto de línea después de ingresar la contraseña
+        echo  # Salto de línea después para que los errores se vean bien
 
         if [[ ${#contrasena} -lt 3 || ${#contrasena} -gt 14 ]]; then
             echo "Error: La contraseña debe tener entre 3 y 14 caracteres."
             continue
         fi
 
-        if [[ "$contrasena" == *"$nombre_usuario"* ]]; then
+        echo "$contrasena" | grep -q "$nombre_usuario"
+        if [[ $? -eq 0 ]]; then
             echo "Error: La contraseña no puede contener el nombre de usuario."
             continue
         fi
@@ -163,11 +165,15 @@ seleccionar_grupo() {
         echo "2. Recursadores"
         read -p "Seleccione una opción: " grupo_opcion
 
-        case "$grupo_opcion" in
-            1) echo "reprobados"; return ;;
-            2) echo "recursadores"; return ;;
-            *) echo "Error: Debe seleccionar 1 o 2." ;;
-        esac
+        if [[ "$grupo_opcion" == "1" ]]; then
+            echo "reprobados"
+            return
+        elif [[ "$grupo_opcion" == "2" ]]; then
+            echo "recursadores"
+            return
+        else
+            echo "Error: Debe seleccionar 1 o 2."
+        fi
     done
 }
 
@@ -240,17 +246,18 @@ cambiar_grupo() {
     echo "Usuario $nombre ahora pertenece a $nuevo_grupo."
 }
 
-# Menú principal
+# Menú principal con formato mejorado
 while true; do
-    echo "\n1. Crear usuario"
+    echo -e "\n=== 📂 Menú de Administración FTP ==="
+    echo "1. Crear usuario"
     echo "2. Cambiar de grupo"
     echo "3. Salir"
-    read -p "Seleccione una opción: " opcion
-    
+    read -r -p "Seleccione una opción: " opcion
+
     case $opcion in
         1) crear_usuario ;;
         2) cambiar_grupo ;;
         3) echo "Saliendo..."; exit 0 ;;
-        *) echo "Opción no válida." ;;
+        *) echo "Error: Opción no válida." ;;
     esac
 done
