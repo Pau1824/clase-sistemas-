@@ -124,9 +124,7 @@ validar_nombre_usuario() {
 validar_contrasena() {
     local nombre_usuario=$1
     while true; do
-        echo  # Salto de línea antes de ingresar la contraseña
-        read -s -p "Ingrese contraseña: " contrasena
-        echo  # Salto de línea después para que los errores se vean bien
+        read -p "Ingrese contraseña: " contrasena
 
         if [[ ${#contrasena} -lt 3 || ${#contrasena} -gt 14 ]]; then
             echo "Error: La contraseña debe tener entre 3 y 14 caracteres."
