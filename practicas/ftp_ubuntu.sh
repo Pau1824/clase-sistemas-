@@ -173,7 +173,7 @@ validar_contrasena() {
 
 seleccionar_grupo() {
     while true; do
-        echo "Seleccione el grupo:"
+        echo -e "\nSeleccione el grupo:"
         echo "1. Reprobados"
         echo "2. Recursadores"
         read -p "Seleccione una opción: " grupo_opcion
