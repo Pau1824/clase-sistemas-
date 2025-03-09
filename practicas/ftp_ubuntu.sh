@@ -125,7 +125,7 @@ validar_contrasena() {
     local nombre_usuario=$1
     while true; do
         read -s -p "Ingrese contraseña: " contrasena
-        echo
+        echo  # Hace un salto de línea después de ingresar la contraseña
 
         if [[ ${#contrasena} -lt 3 || ${#contrasena} -gt 14 ]]; then
             echo "Error: La contraseña debe tener entre 3 y 14 caracteres."
@@ -137,18 +137,17 @@ validar_contrasena() {
             continue
         fi
 
-        if ! [[ "$contrasena" =~ [0-9] ]]; then
-            echo "Error: La contraseña debe contener al menos un número."
-            continue
-        fi
+        echo "$contrasena" | grep -q "[0-9]"
+        tiene_numero=$?
 
-        if ! [[ "$contrasena" =~ [A-Za-z] ]]; then
-            echo "Error: La contraseña debe contener al menos una letra."
-            continue
-        fi
+        echo "$contrasena" | grep -q "[A-Za-z]"
+        tiene_letra=$?
 
-        if ! [[ "$contrasena" =~ [\!\@\#\$\%\^\&\*\(\)\_\-\+\=\.\,\<\>\?\~\`] ]]; then
-            echo "Error: La contraseña debe contener al menos un carácter especial."
+        echo "$contrasena" | grep -q "[!@#$%^&*(),.?\"{}|<>]"
+        tiene_especial=$?
+
+        if [[ $tiene_numero -ne 0 || $tiene_letra -ne 0 || $tiene_especial -ne 0 ]]; then
+            echo "Error: La contraseña debe contener al menos un número, una letra y un carácter especial."
             continue
         fi
 
