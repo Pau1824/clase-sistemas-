@@ -9,7 +9,7 @@ fi
 # Función para obtener versiones de Apache
 obtener_versiones_apache() {
     echo "Obteniendo versiones de Apache..."
-    curl -s "https://httpd.apache.org/download.cgi" | grep -oP 'httpd-\d+\.\d+\.\d+\.tar\.bz2' | sort -Vu | uniq
+    curl -s "https://httpd.apache.org/download.cgi" | grep -oP 'httpd-\d+\.\d+\.\d+\.tar\.bz2' | sort -Vr | uniq | sed 's/httpd-//g' | sed 's/.tar.bz2//g'
 }
 
 # Función para obtener versiones de Tomcat
@@ -27,8 +27,8 @@ obtener_versiones_nginx() {
 # Función para seleccionar una versión
 seleccionar_version() {
     local servicio="$1"
-    local versiones=("$@")
-    unset versiones[0]  # Eliminar el primer elemento (el nombre del servicio)
+    shift
+    local versiones=("$@")  # Captura todas las versiones correctamente en un array
 
     if [ ${#versiones[@]} -eq 0 ]; then
         echo "No se encontraron versiones disponibles para $servicio."
