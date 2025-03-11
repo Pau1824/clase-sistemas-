@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Verifica si curl y jq están instalados
+# Verificar dependencias
 check_dependencies() {
     for pkg in curl jq; do
         if ! command -v $pkg &>/dev/null; then
@@ -10,7 +10,7 @@ check_dependencies() {
     done
 }
 
-# Función para verificar si el puerto está disponible
+# Verificar si el puerto está disponible
 check_port() {
     while true; do
         read -p "Ingrese el puerto en el que desea instalar: " port
@@ -23,25 +23,25 @@ check_port() {
     done
 }
 
-# Función para obtener versiones de Apache desde su página oficial
+# Obtener versiones de Apache
 get_apache_versions() {
     echo "Obteniendo versiones de Apache..."
     curl -s https://downloads.apache.org/httpd/ | grep -oP 'httpd-\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | uniq | tail -5
 }
 
-# Función para obtener versiones de Tomcat desde su página oficial
+# Obtener versiones de Tomcat
 get_tomcat_versions() {
     echo "Obteniendo versiones de Tomcat..."
     curl -s https://downloads.apache.org/tomcat/ | grep -oP '(?<=href=")[0-9]+(?=/")' | sort -V | tail -5
 }
 
-# Función para obtener versiones de Nginx desde su página oficial
+# Obtener versiones de Nginx
 get_nginx_versions() {
     echo "Obteniendo versiones de Nginx..."
-    curl -s http://nginx.org/en/download.html | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -5
+    curl -s http://nginx.org/en/download.html | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | uniq | tail -5
 }
 
-# Instalación de Apache
+# Instalar Apache
 install_apache() {
     versions=$(get_apache_versions)
     echo "Seleccione la versión de Apache:"
@@ -58,7 +58,7 @@ install_apache() {
     echo "Apache $apache_version instalado en el puerto $port."
 }
 
-# Instalación de Tomcat
+# Instalar Tomcat
 install_tomcat() {
     versions=$(get_tomcat_versions)
     echo "Seleccione la versión de Tomcat:"
@@ -75,7 +75,7 @@ install_tomcat() {
     echo "Tomcat $tomcat_version instalado en el puerto $port."
 }
 
-# Instalación de Nginx
+# Instalar Nginx
 install_nginx() {
     versions=$(get_nginx_versions)
     echo "Seleccione la versión de Nginx:"
