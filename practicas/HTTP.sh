@@ -15,7 +15,7 @@ obtener_versiones_apache() {
     local contenido
     contenido=$(curl -s "$url")
     # Puedes descomentar la siguiente línea para guardar el HTML y revisarlo:
-    # echo "$contenido" > /tmp/apache_download.html
+    echo "$contenido" > /tmp/apache_download.html
 
     # Usamos grep para extraer nombres de archivo que sigan el patrón y luego filtramos
     local versiones
@@ -36,7 +36,7 @@ obtener_versiones_tomcat() {
     local contenido
     contenido=$(curl -s "https://archive.apache.org/dist/tomcat/")
     # Guardar para revisar si es necesario:
-    # echo "$contenido" > /tmp/tomcat_download.html
+    echo "$contenido" > /tmp/tomcat_download.html
 
     local versiones
     versiones=$(echo "$contenido" | grep -oP 'tomcat-\d+/' | sed 's|/$||' | sort -Vr | uniq)
@@ -50,7 +50,7 @@ obtener_versiones_nginx() {
     echo "Obteniendo versiones de Nginx..."
     local contenido
     contenido=$(curl -s "https://nginx.org/en/download.html")
-    # echo "$contenido" > /tmp/nginx_download.html
+    echo "$contenido" > /tmp/nginx_download.html
 
     local versiones
     versiones=$(echo "$contenido" | grep -oP 'nginx-\d+\.\d+\.\d+\.tar\.gz' | sort -Vr | uniq)
