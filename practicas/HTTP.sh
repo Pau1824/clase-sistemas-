@@ -1,128 +1,113 @@
 #!/bin/bash
 
-# Verifica si el usuario es root
-if [[ $EUID -ne 0 ]]; then
-   echo "Este script debe ejecutarse como root." 
-   exit 1
-fi
-
-# Función para obtener versiones de Apache
-obtener_versiones_apache() {
-    #echo "Obteniendo versiones de Apache..."
-    curl -s "https://httpd.apache.org/download.cgi" | grep -oP 'httpd-\d+\.\d+\.\d+\.tar\.bz2' | sort -Vu | uniq
-}
-
-# Función para obtener versiones de Tomcat
-obtener_versiones_tomcat() {
-    #echo "Obteniendo versiones de Tomcat..."
-    curl -s "https://archive.apache.org/dist/tomcat/" | grep -oP 'tomcat-\d+/' | sed 's|/$||' | sort -Vr | uniq
-}
-
-# Función para obtener versiones de Nginx
-obtener_versiones_nginx() {
-    #echo "Obteniendo versiones de Nginx..."
-    curl -s "https://nginx.org/en/download.html" | grep -oP 'nginx-\d+\.\d+\.\d+\.tar\.gz' | sort -Vr | uniq
-}
-
-# Función para seleccionar una versión
-seleccionar_version() {
-    local servicio="$1"
-    local versiones=("$@")
-    unset versiones[0]  # Eliminar el primer elemento (el nombre del servicio)
-
-    if [ ${#versiones[@]} -eq 0 ]; then
-        echo "No se encontraron versiones disponibles para $servicio."
-        return 1
-    fi
-
-    echo "Seleccione la versión de $servicio:"
-    select version in "${versiones[@]}"; do
-        if [[ -n "$version" ]]; then
-            echo "Seleccionó la versión $version"
-            echo "$version"
-            return 0
-        else
-            echo "Opción inválida. Intente de nuevo."
+# Verifica si curl y jq están instalados
+check_dependencies() {
+    for pkg in curl jq; do
+        if ! command -v $pkg &>/dev/null; then
+            echo "Instalando $pkg..."
+            sudo apt install -y $pkg
         fi
     done
 }
 
-# Función para solicitar un puerto
-solicitar_puerto() {
-    local puerto
+# Función para verificar si el puerto está disponible
+check_port() {
     while true; do
-        read -p "Ingrese el puerto en el que desea configurar el servicio: " puerto
-        if [[ "$puerto" =~ ^[0-9]+$ && $puerto -gt 0 && $puerto -lt 65536 ]]; then
-            echo "$puerto"
-            return 0
+        read -p "Ingrese el puerto en el que desea instalar: " port
+        if ! sudo netstat -tuln | grep -q ":$port "; then
+            echo "El puerto $port está disponible."
+            break
         else
-            echo "Por favor, ingrese un número de puerto válido (1-65535)."
+            echo "El puerto $port está en uso. Intente con otro."
         fi
     done
 }
 
-# Función para instalar Apache
-instalar_apache() {
-    local versiones=($(obtener_versiones_apache))
-    local version=$(seleccionar_version "Apache" "${versiones[@]}") || return 1
-    local puerto=$(solicitar_puerto)
+# Función para obtener versiones de Apache desde su página oficial
+get_apache_versions() {
+    echo "Obteniendo versiones de Apache..."
+    curl -s https://downloads.apache.org/httpd/ | grep -oP 'httpd-\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | uniq | tail -5
+}
 
-    echo "Descargando Apache versión $version..."
-    wget "https://downloads.apache.org/httpd/$version" -P /tmp/
+# Función para obtener versiones de Tomcat desde su página oficial
+get_tomcat_versions() {
+    echo "Obteniendo versiones de Tomcat..."
+    curl -s https://downloads.apache.org/tomcat/ | grep -oP '(?<=href=")[0-9]+(?=/")' | sort -V | tail -5
+}
 
-    echo "Instalando Apache..."
-    sudo apt update && sudo apt install -y apache2
-    sudo sed -i "s/Listen 80/Listen $puerto/g" /etc/apache2/ports.conf
+# Función para obtener versiones de Nginx desde su página oficial
+get_nginx_versions() {
+    echo "Obteniendo versiones de Nginx..."
+    curl -s http://nginx.org/en/download.html | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -5
+}
+
+# Instalación de Apache
+install_apache() {
+    versions=$(get_apache_versions)
+    echo "Seleccione la versión de Apache:"
+    echo "$versions"
+    read -p "Ingrese la versión de Apache: " apache_version
+
+    check_port
+
+    echo "Instalando Apache versión $apache_version en el puerto $port..."
+    sudo apt update -y
+    sudo apt install -y apache2
+    sudo sed -i "s/Listen 80/Listen $port/" /etc/apache2/ports.conf
     sudo systemctl restart apache2
-    echo "Apache instalado en el puerto $puerto."
+    echo "Apache $apache_version instalado en el puerto $port."
 }
 
-# Función para instalar Tomcat
-instalar_tomcat() {
-    local versiones=($(obtener_versiones_tomcat))
-    local version=$(seleccionar_version "Tomcat" "${versiones[@]}") || return 1
-    local puerto=$(solicitar_puerto)
+# Instalación de Tomcat
+install_tomcat() {
+    versions=$(get_tomcat_versions)
+    echo "Seleccione la versión de Tomcat:"
+    echo "$versions"
+    read -p "Ingrese la versión de Tomcat: " tomcat_version
 
-    echo "Descargando Tomcat versión $version..."
-    wget "https://archive.apache.org/dist/tomcat/$version/bin/apache-tomcat-9.0.73.tar.gz" -P /tmp/
+    check_port
 
-    echo "Instalando Tomcat..."
-    sudo apt update && sudo apt install -y tomcat9
-    sudo sed -i "s/port=\"8080\"/port=\"$puerto\"/g" /etc/tomcat9/server.xml
-    sudo systemctl restart tomcat9
-    echo "Tomcat instalado en el puerto $puerto."
+    echo "Instalando Tomcat versión $tomcat_version en el puerto $port..."
+    sudo apt update -y
+    sudo apt install -y tomcat$tomcat_version
+    sudo sed -i "s/Connector port=\"8080\"/Connector port=\"$port\"/" /etc/tomcat$tomcat_version/server.xml
+    sudo systemctl restart tomcat$tomcat_version
+    echo "Tomcat $tomcat_version instalado en el puerto $port."
 }
 
-# Función para instalar Nginx
-instalar_nginx() {
-    local versiones=($(obtener_versiones_nginx))
-    local version=$(seleccionar_version "Nginx" "${versiones[@]}") || return 1
-    local puerto=$(solicitar_puerto)
+# Instalación de Nginx
+install_nginx() {
+    versions=$(get_nginx_versions)
+    echo "Seleccione la versión de Nginx:"
+    echo "$versions"
+    read -p "Ingrese la versión de Nginx: " nginx_version
 
-    echo "Descargando Nginx versión $version..."
-    wget "https://nginx.org/download/$version" -P /tmp/
+    check_port
 
-    echo "Instalando Nginx..."
-    sudo apt update && sudo apt install -y nginx
-    sudo sed -i "s/listen 80;/listen $puerto;/g" /etc/nginx/sites-available/default
+    echo "Instalando Nginx versión $nginx_version en el puerto $port..."
+    sudo apt update -y
+    sudo apt install -y nginx
+    sudo sed -i "s/listen 80;/listen $port;/" /etc/nginx/sites-available/default
     sudo systemctl restart nginx
-    echo "Nginx instalado en el puerto $puerto."
+    echo "Nginx $nginx_version instalado en el puerto $port."
 }
 
-# Menú de selección de servicio
-while true; do
-    echo "¿Qué servicio desea instalar?"
-    echo "1.- Apache"
-    echo "2.- Tomcat"
-    echo "3.- Nginx"
-    echo "4.- Salir"
-    read -p "Seleccione una opción (1-4): " choice
+# Menú principal
+main_menu() {
+    echo "Seleccione el servicio a instalar:"
+    echo "1) Apache"
+    echo "2) Tomcat"
+    echo "3) Nginx"
+    read -p "Ingrese su opción: " choice
 
     case $choice in
-        1) instalar_apache ;;
-        2) instalar_tomcat ;;
-        3) instalar_nginx ;;
-        4) echo "Saliendo..."; exit 0 ;;
-        *) echo "Opción inválida. Intente de nuevo." ;;
+        1) install_apache ;;
+        2) install_tomcat ;;
+        3) install_nginx ;;
+        *) echo "Opción no válida"; exit 1 ;;
     esac
-done
+}
+
+# Ejecutar el script
+check_dependencies
+main_menu
