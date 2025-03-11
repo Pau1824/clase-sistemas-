@@ -8,19 +8,19 @@ fi
 
 # Función para obtener versiones de Apache
 obtener_versiones_apache() {
-    echo "Obteniendo versiones de Apache..."
+    #echo "Obteniendo versiones de Apache..."
     curl -s "https://httpd.apache.org/download.cgi" | grep -oP 'httpd-\d+\.\d+\.\d+\.tar\.bz2' | sort -Vu | uniq
 }
 
 # Función para obtener versiones de Tomcat
 obtener_versiones_tomcat() {
-    echo "Obteniendo versiones de Tomcat..."
+    #echo "Obteniendo versiones de Tomcat..."
     curl -s "https://archive.apache.org/dist/tomcat/" | grep -oP 'tomcat-\d+/' | sed 's|/$||' | sort -Vr | uniq
 }
 
 # Función para obtener versiones de Nginx
 obtener_versiones_nginx() {
-    echo "Obteniendo versiones de Nginx..."
+    #echo "Obteniendo versiones de Nginx..."
     curl -s "https://nginx.org/en/download.html" | grep -oP 'nginx-\d+\.\d+\.\d+\.tar\.gz' | sort -Vr | uniq
 }
 
