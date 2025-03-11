@@ -13,10 +13,15 @@ elegir_version() {
         "Tomcat") 
             tomcat_ramas=( $(curl -s "$url" | grep -oP '(?<=href=")[0-9]+(?=/")' | sort -Vr) )
             versiones=()
+
             for rama in "${tomcat_ramas[@]}"; do
                 sub_url="$url$rama/"
-                sub_versiones=( $(curl -s "$sub_url" | grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+(?=/")' | sort -Vr | uniq | head -n 3) )
-                versiones+=("${sub_versiones[@]}")
+                # Extraer las versiones dentro de cada rama (ejemplo: v10.1.16/)
+                sub_versiones=( $(curl -s "$sub_url" | grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+(?=/")' | sort -Vr | head -n 3) )
+                
+                for ver in "${sub_versiones[@]}"; do
+                    versiones+=( "${ver#v}" )  # Elimina la "v" del prefijo (ej: v10.1.16 → 10.1.16)
+                done
             done
             ;;
         "Nginx") 
