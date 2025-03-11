@@ -9,7 +9,26 @@ fi
 # Función para obtener versiones de Apache
 obtener_versiones_apache() {
     echo "Obteniendo versiones de Apache..."
-    curl -s "https://httpd.apache.org/download.cgi" | grep -oP 'httpd-\d+\.\d+\.\d+\.tar\.bz2' | sort -Vr | uniq | sed 's/httpd-//g' | sed 's/.tar.bz2//g'
+    local url="https://httpd.apache.org/download.cgi"
+    
+    # Extraer correctamente las versiones, eliminando prefijos y extensiones
+    local versiones=($(curl -s "$url" | grep -oP 'httpd-\d+\.\d+\.\d+\.tar\.bz2' | sort -Vr | uniq | sed -E 's/httpd-([0-9.]+)\.tar\.bz2/\1/'))
+
+    if [ ${#versiones[@]} -eq 0 ]; then
+        echo "No se encontraron versiones disponibles para Apache."
+        return 1
+    fi
+
+    echo "Seleccione la versión de Apache:"
+    select version in "${versiones[@]}"; do
+        if [[ -n "$version" ]]; then
+            echo "Seleccionó la versión $version"
+            echo "$version"
+            return 0
+        else
+            echo "Opción inválida. Intente de nuevo."
+        fi
+    done
 }
 
 # Función para obtener versiones de Tomcat
