@@ -10,25 +10,19 @@ fi
 obtener_versiones_apache() {
     echo "Obteniendo versiones de Apache..."
     local url="https://httpd.apache.org/download.cgi"
-    
-    # Extraer correctamente las versiones, eliminando prefijos y extensiones
-    local versiones=($(curl -s "$url" | grep -oP 'httpd-\d+\.\d+\.\d+\.tar\.bz2' | sort -Vr | uniq | sed -E 's/httpd-([0-9.]+)\.tar\.bz2/\1/'))
 
+    # Extrae correctamente las versiones y almacena en un array
+    local versiones
+    versiones=($(curl -s "$url" | grep -oP 'httpd-\d+\.\d+\.\d+\.tar\.bz2' | sort -Vr | uniq | sed -E 's/httpd-([0-9.]+)\.tar\.bz2/\1/'))
+
+    # Verifica si encontró versiones
     if [ ${#versiones[@]} -eq 0 ]; then
         echo "No se encontraron versiones disponibles para Apache."
         return 1
     fi
 
-    echo "Seleccione la versión de Apache:"
-    select version in "${versiones[@]}"; do
-        if [[ -n "$version" ]]; then
-            echo "Seleccionó la versión $version"
-            echo "$version"
-            return 0
-        else
-            echo "Opción inválida. Intente de nuevo."
-        fi
-    done
+    # Retornar todas las versiones como una lista separada por espacios
+    echo "${versiones[@]}"
 }
 
 # Función para obtener versiones de Tomcat
@@ -47,8 +41,7 @@ obtener_versiones_nginx() {
 seleccionar_version() {
     local servicio="$1"
     shift
-    local versiones=("$@")  # Captura todas las versiones correctamente en un array
-
+    local versiones=("$@")
     if [ ${#versiones[@]} -eq 0 ]; then
         echo "No se encontraron versiones disponibles para $servicio."
         return 1
@@ -82,7 +75,7 @@ solicitar_puerto() {
 
 # Función para instalar Apache
 instalar_apache() {
-    local versiones=($(obtener_versiones_apache))
+    read -ra versiones <<< "$(obtener_versiones_apache)"
     local version=$(seleccionar_version "Apache" "${versiones[@]}") || return 1
     local puerto=$(solicitar_puerto)
 
