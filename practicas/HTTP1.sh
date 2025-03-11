@@ -11,7 +11,13 @@ elegir_version() {
             versiones=( $(curl -s "$url" | grep -oP 'httpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 1) )
             ;;
         "Tomcat") 
-            versiones=( $(curl -s "$url" | grep -oP '(?<=href=")[0-9]+(?=/")' | sort -Vr | uniq) )
+            tomcat_ramas=( $(curl -s "$url" | grep -oP '(?<=href=")[0-9]+(?=/")' | sort -Vr) )
+            versiones=()
+            for rama in "${tomcat_ramas[@]}"; do
+                sub_url="$url$rama/"
+                sub_versiones=( $(curl -s "$sub_url" | grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+(?=/")' | sort -Vr | uniq | head -n 3) )
+                versiones+=("${sub_versiones[@]}")
+            done
             ;;
         "Nginx") 
             versiones=( $(curl -s "$url" | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 2) )
