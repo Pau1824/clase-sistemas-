@@ -1,42 +1,42 @@
 
 cambiar_grupo() {
-    read -p "Ingrese el nombre del usuario que quiere cambiar de grupo: " USERNAME
-
-    # Verificar si el usuario existe
-    if ! id "$USERNAME" &>/dev/null; then
-        echo "El usuario '$USERNAME' no existe."
-        exit 1
+    read -p "Ingrese el nombre del usuario a cambiar de grupo: " nombre
+    
+    if ! id "$nombre" &>/dev/null; then
+        echo "El usuario no existe."
+        return
     fi
-
-    read -p "Desea cambiar a (1) Reprobado o (2) Recursador? (1/2): " NUEVO_GRUPO
-
-    if [[ "$NUEVO_GRUPO" == "1" ]]; then
-        NUEVO_GRUPO_NOMBRE="reprobados"
-        VIEJO_GRUPO_NOMBRE="recursadores"
-    elif [[ "$NUEVO_GRUPO" == "2" ]]; then
-        NUEVO_GRUPO_NOMBRE="recursadores"
-        VIEJO_GRUPO_NOMBRE="reprobados"
+    
+    grupo_actual=""
+    if [[ -d "/srv/ftp/$nombre/reprobados" ]]; then
+        grupo_actual="reprobados"
+    elif [[ -d "/srv/ftp/$nombre/recursadores" ]]; then
+        grupo_actual="recursadores"
     else
-        echo "Opción no válida. Volviendo al menú..."
-        exit 1
+        echo "El usuario no tiene grupo asignado."
+        return
     fi
-
-    #Validacion para evitar cambios necesarios
-    if mount | grep -q "/srv/ftp/$USERNAME/$NUEVO_GRUPO_NOMBRE"; then
-        echo "El usuario '$USERNAME' ya pertenece a '$NUEVO_GRUPO_NOMBRE'."
-        exit 0
+    
+    nuevo_grupo=""
+    if [[ "$grupo_actual" == "reprobados" ]]; then
+        nuevo_grupo="recursadores"
+    else
+        nuevo_grupo="reprobados"
     fi
+    
+    # Montar carpetas nuevamente
+    sudo umount -l "/srv/ftp/$nombre/$grupo_actual"
+    sudo rm -r "/srv/ftp/$nombre/$grupo_actual"
 
-    # Desmontar el grupo anterior si existía
-    sudo umount /srv/ftp/$USERNAME/$VIEJO_GRUPO_NOMBRE
 
-    # Montar la nueva carpeta del grupo
-    sudo mkdir -p /srv/ftp/$USERNAME/$NUEVO_GRUPO_NOMBRE
-    sudo mount --bind /srv/ftp/$NUEVO_GRUPO_NOMBRE /srv/ftp/$USERNAME/$NUEVO_GRUPO_NOMBRE
-
-    # Actualizar /etc/fstab para cambios persistentes
-    #sudo sed -i "/\/srv\/ftp\/$USERNAME\/$VIEJO_GRUPO_NOMBRE/d" /etc/fstab
-    #echo "/srv/ftp/$NUEVO_GRUPO_NOMBRE /srv/ftp/$USERNAME/$NUEVO_GRUPO_NOMBRE none bind 0 0" | sudo tee -a /etc/fstab
-
-    echo "El usuario '$USERNAME' ha sido cambiado a '$NUEVO_GRUPO_NOMBRE'."
+    sudo chown $nombre:ftp /srv/ftp/$nuevo_grupo
+    sudo chmod 770 /srv/ftp/$nuevo_grupo
+    sudo mkdir -p "/srv/ftp/$nombre/$nuevo_grupo"
+    sudo chown "$nombre:ftp" "/srv/ftp/$nombre/$nuevo_grupo"
+    sudo chmod 770 /srv/ftp/$nombre/$grupo
+    #sudo usermod -G "$nuevo_grupo" "$nombre"
+    
+    sudo mount --bind "/srv/ftp/$nuevo_grupo" "/srv/ftp/$nombre/$nuevo_grupo"
+    
+    echo "Usuario $nombre ahora pertenece a $nuevo_grupo."
 }

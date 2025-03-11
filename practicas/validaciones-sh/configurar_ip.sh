@@ -1,4 +1,4 @@
-ip_address=$1
+ip_address=${1:-192.168.1.10}
 
 sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null <<EOT
 network:
