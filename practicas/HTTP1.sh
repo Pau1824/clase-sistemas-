@@ -8,13 +8,13 @@ elegir_version() {
 
     case $servicio in
         "Apache") 
-            versiones=( $(curl -s "$url" | grep -oP 'httpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 3) )
+            versiones=( $(curl -s "$url" | grep -oP 'httpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 1) )
             ;;
         "Lighttpd") 
-            versiones=( $(curl -s "$url" | grep -oP 'lighttpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.xz)' | sort -Vr | head -n 3) )
+            versiones=( $(curl -s "$url" | grep -oP 'lighttpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.xz)' | sort -Vr | head -n 1) )
             ;;
         "Nginx") 
-            versiones=( $(curl -s "$url" | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 3) )
+            versiones=( $(curl -s "$url" | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 2) )
             ;;
     esac
 
