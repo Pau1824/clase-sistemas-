@@ -5,16 +5,16 @@ elegir_version() {
     local servicio="$1"
     local url="$2"
     echo "Obteniendo versiones disponibles de $servicio..."
-    
+
     case $servicio in
         "Apache") 
-            versiones=( $(curl -s "$url" | grep -oP 'httpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 1) )
+            versiones=( $(curl -s "$url" | grep -oP 'httpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 3) )
             ;;
         "Lighttpd") 
-            versiones=( $(curl -s "$url" | grep -oP 'lighttpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.xz)' | sort -Vr | head -n 1) )
+            versiones=( $(curl -s "$url" | grep -oP 'lighttpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.xz)' | sort -Vr | head -n 3) )
             ;;
         "Nginx") 
-            versiones=( $(curl -s "$url" | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 2) )
+            versiones=( $(curl -s "$url" | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 3) )
             ;;
     esac
 
@@ -34,9 +34,10 @@ elegir_version() {
     done
 }
 
-# Verifica si el puerto está disponible
+# Lista de puertos reservados que el usuario NO puede usar
 PUERTOS_RESERVADOS=(21 22 23 53 110 143 161 162 389 443 465 993 995 1433 1434 1521 3306 3389 1 7 9 11 13 15 17 19 137 138 139 2049 3128 6000)
 
+# Verifica si el puerto está disponible
 check_port() {
     while true; do
         read -p "Ingrese el puerto en el que desea instalar: " puerto
@@ -72,118 +73,36 @@ instalar_apache() {
     echo "Apache versión $version instalado y configurado en el puerto $puerto."
 }
 
-# Función para instalar Nginx desde la página oficial
-instalar_nginx() {
-    elegir_version "Nginx" "http://nginx.org/en/download.html" || return
-    check_port
-
-    # Generar el link de descarga
-    url_descarga="http://nginx.org/download/nginx-$version.tar.gz"
-
-    echo "🔽 Descargando Nginx versión $version desde $url_descarga..."
-    wget -O nginx.tar.gz "$url_descarga"
-
-    if [[ ! -f nginx.tar.gz ]]; then
-        echo "Error: No se pudo descargar Nginx."
-        return
-    fi
-
-    echo "Descomprimiendo..."
-    tar -xf nginx.tar.gz
-    cd "nginx-$version" || return
-
-    echo "Compilando e instalando..."
-    ./configure
-    make
-    sudo make install
-
-    echo "Configurando Nginx..."
-    sudo mkdir -p /usr/local/nginx/conf
-    sudo cp conf/nginx.conf /usr/local/nginx/conf/nginx.conf
-
-    # Modificar el puerto en la configuración
-    sudo sed -i "s/listen 80;/listen $puerto;/g" /usr/local/nginx/conf/nginx.conf
-
-    # Crear el servicio systemd
-    sudo bash -c 'cat > /etc/systemd/system/nginx.service <<EOF
-[Unit]
-Description=Nginx Web Server
-After=network.target
-
-[Service]
-ExecStart=/usr/local/nginx/sbin/nginx -g "daemon off;"
-ExecReload=/bin/kill -HUP $MAINPID
-KillMode=mixed
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF'
-
-    echo "Reiniciando systemd..."
-    sudo systemctl daemon-reload
-    sudo systemctl enable nginx
-    sudo systemctl start nginx
-
-    echo "Nginx versión $version instalado y configurado en el puerto $puerto."
-}
-
-# Función para instalar Lighttpd desde la página oficial
+# Función para instalar Lighttpd con la versión específica
 instalar_lighttpd() {
     elegir_version "Lighttpd" "https://download.lighttpd.net/lighttpd/releases-1.4.x/" || return
     check_port
+    sudo apt update
+    sudo apt install -y lighttpd="$version"
 
-    # Generar el link de descarga
-    url_descarga="https://download.lighttpd.net/lighttpd/releases-1.4.x/lighttpd-$version.tar.xz"
+    # Configurar el puerto
+    sudo sed -i "s/server.port\s*=\s*80/server.port = $puerto/" /etc/lighttpd/lighttpd.conf
 
-    echo "Descargando Lighttpd versión $version desde $url_descarga..."
-    wget -O lighttpd.tar.xz "$url_descarga"
-
-    if [[ ! -f lighttpd.tar.xz ]]; then
-        echo "Error: No se pudo descargar Lighttpd."
-        return
-    fi
-
-    echo "Descomprimiendo..."
-    tar -xf lighttpd.tar.xz
-    cd "lighttpd-$version" || return
-
-    echo "Compilando e instalando..."
-    ./configure
-    make
-    sudo make install
-
-    echo "Configurando Lighttpd..."
-    sudo mkdir -p /usr/local/etc/lighttpd
-    sudo cp doc/config/lighttpd.conf /usr/local/etc/lighttpd/
-
-    # Modificar el puerto
-    sudo sed -i "s/server.port\s*=\s*80/server.port = $puerto/" /usr/local/etc/lighttpd/lighttpd.conf
-
-    # Crear el servicio systemd
-    sudo bash -c 'cat > /etc/systemd/system/lighttpd.service <<EOF
-[Unit]
-Description=Lighttpd Web Server
-After=network.target
-
-[Service]
-ExecStart=/usr/local/sbin/lighttpd -D -f /usr/local/etc/lighttpd/lighttpd.conf
-ExecReload=/bin/kill -HUP $MAINPID
-KillMode=mixed
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF'
-
-    echo "Reiniciando systemd..."
-    sudo systemctl daemon-reload
-    sudo systemctl enable lighttpd
-    sudo systemctl start lighttpd
-
+    sudo systemctl restart lighttpd
     echo "Lighttpd versión $version instalado y configurado en el puerto $puerto."
 }
 
+# Función para instalar Nginx con la versión específica
+instalar_nginx() {
+    elegir_version "Nginx" "http://nginx.org/en/download.html" || return
+    check_port
+    sudo apt update
+    sudo apt install -y nginx="$version"
+
+    # Configurar el puerto en todas las líneas donde se usa
+    sudo sed -i "s/listen 80;/listen $puerto;/g" /etc/nginx/sites-available/default
+    sudo sed -i "s/listen \[::\]:80;/listen \[::\]:$puerto;/g" /etc/nginx/sites-available/default
+    sudo sed -i "s/listen 443 ssl;/listen $puerto ssl;/g" /etc/nginx/sites-available/default
+    sudo sed -i "s/listen \[::\]:443 ssl;/listen \[::\]:$puerto ssl;/g" /etc/nginx/sites-available/default
+
+    sudo nginx -t && sudo systemctl restart nginx
+    echo "Nginx versión $version instalado y configurado en el puerto $puerto."
+}
 
 # Menú de selección de servicio
 echo "¿Qué servicio desea instalar?"
