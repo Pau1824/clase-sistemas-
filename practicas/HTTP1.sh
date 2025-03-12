@@ -61,22 +61,47 @@ check_port() {
 instalar_apache() {
     local version
     version=$(elegir_version "Apache" "https://downloads.apache.org/httpd/") || return
+    version=$(echo "$version" | tr -d '\r\n')  # Limpia la versión seleccionada
     check_port
-    local url="https://downloads.apache.org/httpd/httpd-${version}.tar.gz"
 
+    local url="https://downloads.apache.org/httpd/httpd-${version}.tar.gz"
     echo "Descargando Apache versión $version desde $url..."
+    
     wget "$url" -O apache.tar.gz
 
+    if [ ! -s apache.tar.gz ]; then
+        echo "Error: La descarga de Apache falló o el archivo está vacío."
+        exit 1
+    fi
+
     echo "Extrayendo Apache..."
-    tar -xzf apache.tar.gz
-    cd "httpd-${version}" || exit
+    tar -xzf apache.tar.gz || { echo "Error al extraer Apache"; exit 1; }
+
+    cd "httpd-${version}" || { echo "Error: No se pudo acceder al directorio de Apache."; exit 1; }
+
+    echo "Instalando dependencias necesarias..."
+    sudo apt update
+    sudo apt install -y build-essential libpcre3 libpcre3-dev libssl-dev
 
     echo "Compilando Apache..."
     ./configure --prefix=/usr/local/apache$version --enable-so
-    make
+    make -j$(nproc)
     sudo make install
 
-    echo "Apache versión $version instalado en /usr/local/apache$version"
+    echo "Modificando configuración del puerto..."
+    sudo sed -i "s/Listen 80/Listen $puerto/g" /usr/local/apache$version/conf/httpd.conf
+
+    echo "Iniciando Apache..."
+    sudo /usr/local/apache$version/bin/apachectl start
+
+    echo "Configurando firewall para permitir tráfico en el puerto $puerto..."
+    if command -v ufw &> /dev/null; then
+        sudo ufw allow "$puerto"/tcp
+    else
+        echo "UFW no está instalado, asegúrese de permitir el puerto manualmente."
+    fi
+
+    echo "Apache versión $version instalado, configurado en el puerto $puerto y ejecutándose."
 }
 
 # Función para instalar Lighttpd
