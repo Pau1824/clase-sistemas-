@@ -62,6 +62,13 @@ instalar_apache() {
     local version
     version=$(elegir_version "Apache" "https://downloads.apache.org/httpd/") || return
     version=$(echo "$version" | tr -d '\r\n')  # Limpia la versión seleccionada
+    
+    # Verificar que la versión es válida (solo números y puntos)
+    if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "Error: La versión seleccionada no es válida."
+        exit 1
+    fi
+    
     check_port
 
     local url="https://downloads.apache.org/httpd/httpd-${version}.tar.gz"
