@@ -72,7 +72,63 @@ instalar_apache() {
     echo "Apache versión $version instalado y configurado en el puerto $puerto."
 }
 
-# Función para instalar Lighttpd con la versión específica
+# Función para instalar Nginx desde la página oficial
+instalar_nginx() {
+    elegir_version "Nginx" "http://nginx.org/en/download.html" || return
+    check_port
+
+    # Generar el link de descarga
+    url_descarga="http://nginx.org/download/nginx-$version.tar.gz"
+
+    echo "🔽 Descargando Nginx versión $version desde $url_descarga..."
+    wget -O nginx.tar.gz "$url_descarga"
+
+    if [[ ! -f nginx.tar.gz ]]; then
+        echo "Error: No se pudo descargar Nginx."
+        return
+    fi
+
+    echo "Descomprimiendo..."
+    tar -xf nginx.tar.gz
+    cd "nginx-$version" || return
+
+    echo "Compilando e instalando..."
+    ./configure
+    make
+    sudo make install
+
+    echo "Configurando Nginx..."
+    sudo mkdir -p /usr/local/nginx/conf
+    sudo cp conf/nginx.conf /usr/local/nginx/conf/nginx.conf
+
+    # Modificar el puerto en la configuración
+    sudo sed -i "s/listen 80;/listen $puerto;/g" /usr/local/nginx/conf/nginx.conf
+
+    # Crear el servicio systemd
+    sudo bash -c 'cat > /etc/systemd/system/nginx.service <<EOF
+[Unit]
+Description=Nginx Web Server
+After=network.target
+
+[Service]
+ExecStart=/usr/local/nginx/sbin/nginx -g "daemon off;"
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF'
+
+    echo "Reiniciando systemd..."
+    sudo systemctl daemon-reload
+    sudo systemctl enable nginx
+    sudo systemctl start nginx
+
+    echo "Nginx versión $version instalado y configurado en el puerto $puerto."
+}
+
+# Función para instalar Lighttpd desde la página oficial
 instalar_lighttpd() {
     elegir_version "Lighttpd" "https://download.lighttpd.net/lighttpd/releases-1.4.x/" || return
     check_port
@@ -104,8 +160,7 @@ instalar_lighttpd() {
     # Modificar el puerto
     sudo sed -i "s/server.port\s*=\s*80/server.port = $puerto/" /usr/local/etc/lighttpd/lighttpd.conf
 
-    # Crear el servicio de systemd
-    echo "Creando el servicio systemd..."
+    # Crear el servicio systemd
     sudo bash -c 'cat > /etc/systemd/system/lighttpd.service <<EOF
 [Unit]
 Description=Lighttpd Web Server
@@ -127,24 +182,6 @@ EOF'
     sudo systemctl start lighttpd
 
     echo "Lighttpd versión $version instalado y configurado en el puerto $puerto."
-
-}
-
-# Función para instalar Nginx con la versión específica
-instalar_nginx() {
-    elegir_version "Nginx" "http://nginx.org/en/download.html" || return
-    check_port
-    sudo apt update
-    sudo apt install -y nginx="$version"
-
-    # Configurar el puerto en todas las líneas donde se usa
-    sudo sed -i "s/listen 80;/listen $puerto;/g" /etc/nginx/sites-available/default
-    sudo sed -i "s/listen \[::\]:80;/listen \[::\]:$puerto;/g" /etc/nginx/sites-available/default
-    sudo sed -i "s/listen 443 ssl;/listen $puerto ssl;/g" /etc/nginx/sites-available/default
-    sudo sed -i "s/listen \[::\]:443 ssl;/listen \[::\]:$puerto ssl;/g" /etc/nginx/sites-available/default
-
-    sudo nginx -t && sudo systemctl restart nginx
-    echo "Nginx versión $version instalado y configurado en el puerto $puerto."
 }
 
 
