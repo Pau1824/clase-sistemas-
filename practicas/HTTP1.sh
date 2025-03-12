@@ -57,35 +57,52 @@ check_port() {
     done
 }
 
-# Función para instalar Apache
+# Función para instalar Apache con la versión específica
 instalar_apache() {
     elegir_version "Apache" "https://downloads.apache.org/httpd/" || return
     check_port
-    sudo apt update && sudo apt install -y apache2
+    sudo apt update
+    sudo apt install -y apache2="$version"
+
+    # Configurar el puerto
     sudo sed -i "s/Listen 80/Listen $puerto/g" /etc/apache2/ports.conf
+    sudo sed -i "s/<VirtualHost \*:80>/<VirtualHost \*:$puerto>/g" /etc/apache2/sites-available/000-default.conf
+
     sudo systemctl restart apache2
-    echo "Apache instalado y configurado en el puerto $puerto."
+    echo "Apache versión $version instalado y configurado en el puerto $puerto."
 }
 
-# Función para instalar Lighttpd
+# Función para instalar Lighttpd con la versión específica
 instalar_lighttpd() {
     elegir_version "Lighttpd" "https://download.lighttpd.net/lighttpd/releases-1.4.x/" || return
     check_port
-    sudo apt update && sudo apt install -y lighttpd
+    sudo apt update
+    sudo apt install -y lighttpd="$version"
+
+    # Configurar el puerto
     sudo sed -i "s/server.port\s*=\s*80/server.port = $puerto/" /etc/lighttpd/lighttpd.conf
+
     sudo systemctl restart lighttpd
-    echo "Lighttpd instalado y configurado en el puerto $puerto."
+    echo "Lighttpd versión $version instalado y configurado en el puerto $puerto."
 }
 
-# Función para instalar Nginx
+# Función para instalar Nginx con la versión específica
 instalar_nginx() {
     elegir_version "Nginx" "http://nginx.org/en/download.html" || return
     check_port
-    sudo apt update && sudo apt install -y nginx
+    sudo apt update
+    sudo apt install -y nginx="$version"
+
+    # Configurar el puerto en todas las líneas donde se usa
     sudo sed -i "s/listen 80;/listen $puerto;/g" /etc/nginx/sites-available/default
-    sudo systemctl restart nginx
-    echo "Nginx instalado y configurado en el puerto $puerto."
+    sudo sed -i "s/listen \[::\]:80;/listen \[::\]:$puerto;/g" /etc/nginx/sites-available/default
+    sudo sed -i "s/listen 443 ssl;/listen $puerto ssl;/g" /etc/nginx/sites-available/default
+    sudo sed -i "s/listen \[::\]:443 ssl;/listen \[::\]:$puerto ssl;/g" /etc/nginx/sites-available/default
+
+    sudo nginx -t && sudo systemctl restart nginx
+    echo "Nginx versión $version instalado y configurado en el puerto $puerto."
 }
+
 
 # Menú de selección de servicio
 echo "¿Qué servicio desea instalar?"
