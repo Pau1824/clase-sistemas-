@@ -76,14 +76,58 @@ instalar_apache() {
 instalar_lighttpd() {
     elegir_version "Lighttpd" "https://download.lighttpd.net/lighttpd/releases-1.4.x/" || return
     check_port
-    sudo apt update
-    sudo apt install -y lighttpd="$version"
 
-    # Configurar el puerto
-    sudo sed -i "s/server.port\s*=\s*80/server.port = $puerto/" /etc/lighttpd/lighttpd.conf
+    # Generar el link de descarga
+    url_descarga="https://download.lighttpd.net/lighttpd/releases-1.4.x/lighttpd-$version.tar.xz"
 
-    sudo systemctl restart lighttpd
+    echo "Descargando Lighttpd versión $version desde $url_descarga..."
+    wget -O lighttpd.tar.xz "$url_descarga"
+
+    if [[ ! -f lighttpd.tar.xz ]]; then
+        echo "Error: No se pudo descargar Lighttpd."
+        return
+    fi
+
+    echo "Descomprimiendo..."
+    tar -xf lighttpd.tar.xz
+    cd "lighttpd-$version" || return
+
+    echo "Compilando e instalando..."
+    ./configure
+    make
+    sudo make install
+
+    echo "Configurando Lighttpd..."
+    sudo mkdir -p /usr/local/etc/lighttpd
+    sudo cp doc/config/lighttpd.conf /usr/local/etc/lighttpd/
+
+    # Modificar el puerto
+    sudo sed -i "s/server.port\s*=\s*80/server.port = $puerto/" /usr/local/etc/lighttpd/lighttpd.conf
+
+    # Crear el servicio de systemd
+    echo "Creando el servicio systemd..."
+    sudo bash -c 'cat > /etc/systemd/system/lighttpd.service <<EOF
+[Unit]
+Description=Lighttpd Web Server
+After=network.target
+
+[Service]
+ExecStart=/usr/local/sbin/lighttpd -D -f /usr/local/etc/lighttpd/lighttpd.conf
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF'
+
+    echo "Reiniciando systemd..."
+    sudo systemctl daemon-reload
+    sudo systemctl enable lighttpd
+    sudo systemctl start lighttpd
+
     echo "Lighttpd versión $version instalado y configurado en el puerto $puerto."
+
 }
 
 # Función para instalar Nginx con la versión específica
