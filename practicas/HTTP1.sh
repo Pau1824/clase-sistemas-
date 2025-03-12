@@ -35,14 +35,24 @@ elegir_version() {
 }
 
 # Verifica si el puerto está disponible
+PUERTOS_RESERVADOS=(21 22 23 53 110 143 161 162 389 443 465 993 995 1433 1434 1521 3306 3389 1 7 9 11 13 15 17 19 137 138 139 2049 3128 6000)
+
 check_port() {
     while true; do
         read -p "Ingrese el puerto en el que desea instalar: " puerto
-        if ! sudo netstat -tuln | grep -q ":$puerto "; then
+
+        # Revisar si el puerto está en la lista de reservados
+        if [[ " ${PUERTOS_RESERVADOS[@]} " =~ " $puerto " ]]; then
+            echo "Error: El puerto $puerto está reservado y no se puede usar."
+            continue
+        fi
+
+        # Revisar si el puerto está en uso
+        if sudo netstat -tuln | grep -q ":$puerto "; then
+            echo "El puerto $puerto ya está en uso. Intente con otro."
+        else
             echo "El puerto $puerto está disponible."
             break
-        else
-            echo "El puerto $puerto está en uso. Intente con otro."
         fi
     done
 }
