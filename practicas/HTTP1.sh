@@ -8,13 +8,13 @@ elegir_version() {
 
     case $servicio in
         "Apache") 
-            versiones=( $(curl -s "$url" | grep -oP 'httpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 1) )
+            versiones=( $(curl -s "$url" | grep -oP 'httpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq) )
             ;;
         "Lighttpd") 
-            versiones=( $(curl -s "$url" | grep -oP 'lighttpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.xz)' | sort -Vr | head -n 1) )
+            versiones=( $(curl -s "$url" | grep -oP 'lighttpd-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.xz)' | sort -Vr) )
             ;;
         "Nginx") 
-            versiones=( $(curl -s "$url" | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr | uniq | head -n 2) )
+            versiones=( $(curl -s "$url" | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.gz)' | sort -Vr) )
             ;;
     esac
 
@@ -58,50 +58,69 @@ check_port() {
     done
 }
 
-# Función para instalar Apache con la versión específica
 instalar_apache() {
-    elegir_version "Apache" "https://downloads.apache.org/httpd/" || return
+    local version
+    version=$(elegir_version "Apache" "https://downloads.apache.org/httpd/") || return
     check_port
-    sudo apt update
-    sudo apt install -y apache2="$version"
+    local url="https://downloads.apache.org/httpd/httpd-${version}.tar.gz"
 
-    # Configurar el puerto
-    sudo sed -i "s/Listen 80/Listen $puerto/g" /etc/apache2/ports.conf
-    sudo sed -i "s/<VirtualHost \*:80>/<VirtualHost \*:$puerto>/g" /etc/apache2/sites-available/000-default.conf
+    echo "Descargando Apache versión $version desde $url..."
+    wget "$url" -O apache.tar.gz
 
-    sudo systemctl restart apache2
-    echo "Apache versión $version instalado y configurado en el puerto $puerto."
+    echo "Extrayendo Apache..."
+    tar -xzf apache.tar.gz
+    cd "httpd-${version}" || exit
+
+    echo "Compilando Apache..."
+    ./configure --prefix=/usr/local/apache$version --enable-so
+    make
+    sudo make install
+
+    echo "Apache versión $version instalado en /usr/local/apache$version"
 }
 
-# Función para instalar Lighttpd con la versión específica
+# Función para instalar Lighttpd
 instalar_lighttpd() {
-    elegir_version "Lighttpd" "https://download.lighttpd.net/lighttpd/releases-1.4.x/" || return
+    local version
+    version=$(elegir_version "Lighttpd" "https://download.lighttpd.net/lighttpd/releases-1.4.x/") || return
     check_port
-    sudo apt update
-    sudo apt install -y lighttpd="$version"
+    local url="https://download.lighttpd.net/lighttpd/releases-1.4.x/lighttpd-${version}.tar.xz"
 
-    # Configurar el puerto
-    sudo sed -i "s/server.port\s*=\s*80/server.port = $puerto/" /etc/lighttpd/lighttpd.conf
+    echo "Descargando Lighttpd versión $version desde $url..."
+    wget "$url" -O lighttpd.tar.xz
 
-    sudo systemctl restart lighttpd
-    echo "Lighttpd versión $version instalado y configurado en el puerto $puerto."
+    echo "Extrayendo Lighttpd..."
+    tar -xf lighttpd.tar.xz
+    cd "lighttpd-${version}" || exit
+
+    echo "Compilando Lighttpd..."
+    ./configure --prefix=/usr/local/lighttpd$version
+    make
+    sudo make install
+
+    echo "Lighttpd versión $version instalado en /usr/local/lighttpd$version"
 }
 
-# Función para instalar Nginx con la versión específica
+# Función para instalar Nginx
 instalar_nginx() {
-    elegir_version "Nginx" "http://nginx.org/en/download.html" || return
+    local version
+    version=$(elegir_version "Nginx" "http://nginx.org/en/download.html") || return
     check_port
-    sudo apt update
-    sudo apt install -y nginx="$version"
+    local url="http://nginx.org/download/nginx-${version}.tar.gz"
 
-    # Configurar el puerto en todas las líneas donde se usa
-    sudo sed -i "s/listen 80;/listen $puerto;/g" /etc/nginx/sites-available/default
-    sudo sed -i "s/listen \[::\]:80;/listen \[::\]:$puerto;/g" /etc/nginx/sites-available/default
-    sudo sed -i "s/listen 443 ssl;/listen $puerto ssl;/g" /etc/nginx/sites-available/default
-    sudo sed -i "s/listen \[::\]:443 ssl;/listen \[::\]:$puerto ssl;/g" /etc/nginx/sites-available/default
+    echo "Descargando Nginx versión $version desde $url..."
+    wget "$url" -O nginx.tar.gz
 
-    sudo nginx -t && sudo systemctl restart nginx
-    echo "Nginx versión $version instalado y configurado en el puerto $puerto."
+    echo "Extrayendo Nginx..."
+    tar -xzf nginx.tar.gz
+    cd "nginx-${version}" || exit
+
+    echo "Compilando Nginx..."
+    ./configure --prefix=/usr/local/nginx$version
+    make
+    sudo make install
+
+    echo "Nginx versión $version instalado en /usr/local/nginx$version"
 }
 
 # Menú de selección de servicio
