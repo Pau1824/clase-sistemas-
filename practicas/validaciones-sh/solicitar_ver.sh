@@ -1,3 +1,4 @@
+#!/bin/bash
 solicitar_ver() {
     local service="$1"
     local ver

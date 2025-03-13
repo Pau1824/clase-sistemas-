@@ -1,4 +1,5 @@
-source "./variables/variables_http.sh"
+#!/bin/bash
+source "./variables_http.sh"
 
 obtener_version(){
     local service="$1"

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-source "./menu/menu_http.sh"
-source "./configuracion/obtener_version.sh"
-source "./entrada/solicitar_ver.sh"
-source "./entrada/solicitar_puerto.sh"
-source "./configuracion/conf_http.sh"
+source "./menu_http.sh"
+source "./obtener_version.sh"
+source "./solicitar_ver.sh"
+source "./solicitar_puerto.sh"
+source "./conf_http.sh"
 
 if [[ $EUID -ne 0 ]]; then
     echo "Este script debe ejecutarse como root" 
@@ -15,13 +15,13 @@ sudo apt install net-tools -y > /dev/null 2>&1
 
 while true; do
     menu_http
-    read -p "Elija el servicio HTTP que desea configurar (1-3): " op
+    read -p "Seleccione el servicio HTTP que queria instalar y configurar: " op
             
     if [ "$op" -eq 1 ]; then
         versions=$(obtener_version "Apache")
         stable=$(echo "$versions" | head -1)
         menu_http2 "Apache" "$stable" " "
-        echo "Elija la versión que desea instalar: "
+        echo "Elija una version: "
         op2=$(solicitar_ver "Apache") 
         if [ "$op2" -eq 1 ]; then
             port=$(solicitar_puerto)
@@ -32,12 +32,12 @@ while true; do
         elif [ "$op2" -eq 2 ]; then
             continue
         fi
-    elif [ "$op" -eq 2 ]; then
+    elif [ "$op" -eq 3 ]; then
         versions=$(obtener_version "Nginx")
         stable=$(echo "$versions" | tail -n 2 | head -1)
         mainline=$(echo "$versions" | tail -1)
         menu_http2 "Nginx" "$stable" "$mainline"
-        echo "Elija la versión que desea instalar: "
+        echo "Elija una version: "
         op2=$(solicitar_ver "Nginx")
         if [ "$op2" -eq 1 ]; then  
             port=$(solicitar_puerto)
@@ -54,12 +54,12 @@ while true; do
         elif [ "$op2" -eq 3 ]; then
             continue
         fi
-    elif [ "$op" -eq 3 ]; then
+    elif [ "$op" -eq 2 ]; then
         versions=$(obtener_version "OpenLiteSpeed")
         stable=$(echo "$versions" | tail -n 2 | head -1)
         mainline=$(echo "$versions" | tail -1)
         menu_http2 "OpenLiteSpeed" "$stable" "$mainline"
-        echo "Elija la versión que desea instalar: "
+        echo "Elija una version: "
         op2=$(solicitar_ver "OpenLiteSpeed")
         if [ "$op2" -eq 1 ]; then
             port=$(solicitar_puerto)
@@ -80,6 +80,6 @@ while true; do
         echo "Saliendo..."
         exit 0
     else
-        echo "Opción no válida. Intente de nuevo."
+        echo "Opción no válida"
     fi
 done

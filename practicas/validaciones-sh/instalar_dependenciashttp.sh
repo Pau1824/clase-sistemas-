@@ -1,3 +1,4 @@
+#!/bin/bash
 instalar_dependenciashttp(){ 
     # Actualizar lista de paquetes
     sudo apt update -y > /dev/null 2>&1
