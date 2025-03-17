@@ -53,12 +53,33 @@ Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessT
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="recursadores";permissions=3} -PSPath IIS:\ -Location "FTPServidor/recursadores"
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="publica";permissions=3} -PSPath IIS:\ -Location "FTPServidor/publica"
 
+do {
+    $opcionSSL = Read-Host "¿Deseas habilitar SSL en el servidor FTP? (S/N)"
+    $opcionSSL = $opcionSSL.ToLower()
+} while (-not ($opcionSSL -match "^[sn]$"))
 
-# Deshabilitar SSL en el FTP
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
-Set-ItemProperty "IIS:\Sites\FTPServidor" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
+if ($opcionSSL -eq "s") {
+    Write-Host "Generando certificado autofirmado para SSL..." -ForegroundColor Cyan
+    $cert = New-SelfSignedCertificate -DnsName "ftp.local" -CertStoreLocation "Cert:\LocalMachine\My"
+    $certThumbprint = $cert.Thumbprint
 
-Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+    # Configurar SSL en el FTP
+    Write-Host "Configurando SSL en el servidor FTP..." -ForegroundColor Cyan
+    Set-ItemProperty "IIS:\Sites\$ftpSiteName" -Name ftpServer.security.ssl.controlChannelPolicy -Value 1  # SSL obligatorio en canal de control
+    Set-ItemProperty "IIS:\Sites\$ftpSiteName" -Name ftpServer.security.ssl.dataChannelPolicy -Value 1  # SSL obligatorio en canal de datos
+    Set-ItemProperty "IIS:\Sites\$ftpSiteName" -Name ftpServer.security.ssl.serverCertHash -Value $certThumbprint  # Asociar certificado SSL
+
+    Write-Host "SSL habilitado correctamente en el servidor FTP." -ForegroundColor Green
+}
+elseif ($opcionSSL -eq "n") {
+    Write-Host "Deshabilitando SSL en el servidor FTP..." -ForegroundColor Yellow
+    Set-ItemProperty "IIS:\Sites\$ftpSiteName" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
+    Set-ItemProperty "IIS:\Sites\$ftpSiteName" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
+
+    Write-Host "SSL deshabilitado en el servidor FTP." -ForegroundColor Yellow
+}
+
+#Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
 
 # Configurar Firewall
 New-NetFirewallRule -DisplayName "FTP (Puerto 21)" -Direction Inbound -Protocol TCP -LocalPort 21 -Action Allow

@@ -13,6 +13,20 @@ fi
 
 sudo apt install net-tools -y > /dev/null 2>&1
 
+preguntar_ssl() {
+    local respuesta
+    while true; do
+        read -p "¿Quieres activar SSL? (s/n): " respuesta
+        respuesta=$(echo "$respuesta" | tr '[:upper:]' '[:lower:]')
+        if [[ "$respuesta" == "s" || "$respuesta" == "n" ]]; then
+            echo "$respuesta"
+            return
+        else
+            echo "Entrada no válida. Debes ingresar 's' o 'n'." >&2
+        fi
+    done
+}
+
 while true; do
     menu_http
     read -p "Seleccione el servicio HTTP que queria instalar y configurar: " op
@@ -28,7 +42,8 @@ while true; do
             if [[ -z "$port" ]]; then
                 continue
             fi
-            conf_apache "$port" "$stable"
+            ssl=$(preguntar_ssl)
+            conf_apache "$port" "$stable" "$ssl"
         elif [ "$op2" -eq 2 ]; then
             continue
         fi
@@ -44,13 +59,15 @@ while true; do
             if [[ -z "$port" ]]; then
                 continue
             fi
-            conf_nginx "$port" "$stable"
+            ssl=$(preguntar_ssl)
+            conf_nginx "$port" "$stable" "$ssl"
         elif [ "$op2" -eq 2 ]; then
             port=$(solicitar_puerto)
             if [[ -z "$port" ]]; then
                 continue
             fi
-            conf_nginx "$port" "$mainline"
+            ssl=$(preguntar_ssl)
+            conf_nginx "$port" "$mainline" "$ssl"
         elif [ "$op2" -eq 3 ]; then
             continue
         fi
@@ -66,13 +83,15 @@ while true; do
             if [[ -z "$port" ]]; then
                 continue
             fi
-            conf_litespeed "$port" "$stable"
+            ssl=$(preguntar_ssl)
+            conf_litespeed "$port" "$stable" "$ssl"
         elif [ "$op2" -eq 2 ]; then 
             port=$(solicitar_puerto)
             if [[ -z "$port" ]]; then
                 continue
             fi
-            conf_litespeed "$port" "$mainline"
+            ssl=$(preguntar_ssl)
+            conf_litespeed "$port" "$mainline" "$ssl"
         elif [ "$op2" -eq 3 ]; then
             continue
         fi

@@ -2,7 +2,7 @@ function solicitar_puerto {
     param ([string]$msg)
 
     $ports_restricted = @(1433, 1434, 1521, 3306, 3389,
-                          1, 7, 9, 11, 13, 15, 17, 19, 137, 138, 139, 2049, 3128, 5432, 6000, 6379, 6660, 6661, 6662, 6663, 6664, 6665, 6666, 6667, 6668, 6669, 27017, 8000, 8080, 8888, 21, 22, 25, 53, 110, 143, 161, 162, 389, 443, 465, 993, 995)
+                          1, 7, 9, 11, 13, 15, 17, 19, 137, 138, 139, 2049, 3128, 5432, 6000, 6379, 6660, 6661, 6662, 6663, 6664, 6665, 6666, 6667, 6668, 6669, 27017, 8000, 8888, 21, 22, 25, 53, 110, 143, 161, 162, 389, 443, 465, 993, 995)
 
     while ($true) {
         $port = Read-Host $msg
@@ -16,26 +16,26 @@ function solicitar_puerto {
 
             # Validar rango permitido
             if ($port -lt 1 -or $port -gt 65535) {
-                Write-Host "El puerto debe estar entre 1 y 65535." -ForegroundColor Red
+                Write-Host "El puerto debe estar entre 1 y 65535." 
                 continue
             }
 
             # Verificar si el puerto está en uso
             if (netstat -an | Select-String ":$port " | Where-Object { $_ -match "LISTENING" }) {
-                Write-Host "El puerto $port ya está en uso" -ForegroundColor Yellow
+                Write-Host "El puerto $port lo estan usando" 
                 continue
             }
 
             # Verificar si el puerto está en la lista de restringidos
             if ($port -in $ports_restricted){
-                Write-Host "El puerto $port está restringido" -ForegroundColor Yellow
+                Write-Host "El puerto $port está reservado"
                 continue
             }
 
             # Si pasa todas las validaciones, devolver el puerto
             return $port
         } else {
-            Write-Host "Ingresa un número válido." -ForegroundColor Red
+            Write-Host "Ingresa un número válido."
         }
     }
 }
@@ -43,7 +43,7 @@ function solicitar_puerto {
 function conf_IIS {
     param( [string]$port )
     
-    Write-Host "Configurando IIS... " -ForegroundColor Green
+    Write-Host "Iniciando la configuracion IIS" 
 
     # Instalar IIS si no está instalado
     if (-not (Get-WindowsFeature -Name Web-Server).Installed) {
@@ -113,7 +113,7 @@ function obtener_apache {
 
     #Verificar si se encontraron versiones
     if (-not $versiones) {
-        Write-Host "ERROR: No se encontraron versiones disponibles en la página."
+        Write-Host "No se encontraron versiones disponibles"
         return
     }
 
@@ -128,12 +128,12 @@ function obtener_apache {
 
     #Validar si la versión de desarrollo es válida
     if (-not $ver_dev -or $ver_dev -match "^\d+\.[0-3]\.") {
-        $ver_dev = "No hay version de desarrollo disponible"
+        $ver_dev = "No hay version de desarrollo"
     }
 
     #Mostrar los resultados
-    Write-Host "1. Version LTS: $ver_lts"
-    Write-Host "2. Version De Desarrollo: $ver_dev "
+    Write-Host "1. Version estable: $ver_lts"
+    #Write-Host "2. Version De Desarrollo: $ver_dev "
 
     #Retornar la version LTS
     return $ver_lts
@@ -151,10 +151,10 @@ function conf_apache {
     $extdestino = "C:\Apache24"
 
      try {
-        Write-Host "Iniciando instalación de Apache HTTP Server versión $version..." -ForegroundColor Green
+        Write-Host "Iniciando instalación de Apache" 
 
          # Descargar Apache desde la URL especificada
-        Write-Host "Descargando Apache desde: $url"
+        Write-Host "Apache: $url"
         $agente = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 
         # Sobrescribir la política de certificados SSL para evitar problemas con certificados no confiables
@@ -181,9 +181,9 @@ function conf_apache {
         $configFile = Join-Path $extdestino "conf\httpd.conf"
         if (Test-Path $configFile) {
             (Get-Content $configFile) -replace "Listen 80", "Listen $port" | Set-Content $configFile
-            Write-Host "Configuración actualizada para escuchar en el puerto $port" -ForegroundColor Green
+            Write-Host "Configuración en el puerto $port"
         } else {
-            Write-Host "Error: No se encontró el archivo de configuración en $configFile"
+            Write-Host "No se encontró el archivo de configuración en $configFile"
             return
         }
 
@@ -194,14 +194,14 @@ function conf_apache {
             #Write-Host "Instalando Apache como servicio..." -ForegroundColor Green
             # Instalar Apache como un servicio de Windows
             Start-Process -FilePath $exeApache -ArgumentList '-k', 'install', '-n', 'Apache24' -NoNewWindow -Wait
-            Write-Host "Iniciando Apache..." -ForegroundColor Green
+            Write-Host "Iniciando Apache"
             Start-Service -Name "Apache24"
-            Write-Host "Apache instalado y ejecutándose correctamente en el puerto $:port" -ForegroundColor Green
+            Write-Host "Apache instalado,se ejecuta en el puerto $:port"
 
             # Habilitar el puerto en el firewall al final de la instalación
             New-NetFirewallRule -DisplayName "Abrir Puerto $port" -Direction Inbound -Protocol TCP -LocalPort $port -Action Allow
         } else {
-            Write-Host "Error: No se encontró el ejecutable httpd.exe en $extdestino"
+            Write-Host "No se encontró el ejecutable httpd.exe en $extdestino"
         }
     } catch {
         Write-Host "Error durante la instalación de Apache: $_"
@@ -215,7 +215,7 @@ function obtener_nginx {
 
     # Verificar si se encontraron versiones
     if (-not $versions) {
-        Write-Host "ERROR: No se encontraron versiones de NGINX disponibles en la página."
+        Write-Host "No se encontraron versiones NGINX"
         return $null
     }
 
