@@ -2,6 +2,7 @@
 
 Import-Module "C:\Users\Administrator\Desktop\validaciones-ps1\modulohttp.psm1"
 Import-Module "C:\Users\Administrator\Desktop\validaciones-ps1\moduloFTP-HTTP.psm1"
+Import-Module "C:\Users\Administrator\Desktop\validaciones-ps1\moduloFTP-Descarga.psm1"
 
 # Verifica si el script se está ejecutando como Administrador
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
@@ -172,6 +173,44 @@ if ($opcion -eq "1") {
         # Guardamos la versión seleccionada
         $selectedFile = $files[[int]$op2 - 1]
         Write-Host "Selecciono la version: $selectedFile" -ForegroundColor Green
+
+        if ($carpetaSeleccionada -eq "Apache") {
+            $port = solicitar_puerto "Ingresa el puerto:"
+            if ([string]::IsNullOrEmpty($port)) {
+                Write-Host "Puerto no ingresado. Regresando al menú..." -ForegroundColor Yellow
+                continue
+            }
+
+            DescargarYDescomprimir -ftpServer $ftpServer -ftpUser $ftpUser -ftpPass $ftpPass `
+                                   -carpetaSeleccionada $carpetaSeleccionada -selectedFile $selectedFile -Port $port
+
+            $rutaApache = "C:\\Apache24"
+            Configurar-Apache -RutaDestino $rutaApache -Port $port
+        }
+        elseif ($carpetaSeleccionada -eq "Nginx") {
+            $port = solicitar_puerto "Ingresa el puerto:"
+            if ([string]::IsNullOrEmpty($port)) {
+                Write-Host "Puerto no ingresado. Regresando al menú..." -ForegroundColor Yellow
+                continue
+            }
+        
+            DescargarYDescomprimir -ftpServer $ftpServer -ftpUser $ftpUser -ftpPass $ftpPass `
+                                   -carpetaSeleccionada $carpetaSeleccionada -selectedFile $selectedFile -Port $port
+        
+            # 🔎 Obtener versión desde el nombre del archivo seleccionado
+            if ($selectedFile -match '([0-9]+\.[0-9]+\.[0-9]+)') {
+                $versionNginx = $matches[1]
+            } else {
+                Write-Host "No se pudo detectar la versión de Nginx" -ForegroundColor Red
+                continue
+            }
+        
+            $rutaNginx = "C:\Nginx"
+            $IP = "192.168.1.2"  # O pedirla al usuario si quieres
+        
+            Configurar-Nginx -RutaDestino $rutaNginx -Port $port -version $versionNginx -IP $IP
+        }
+
     }
 } else {
     Write-Host "Opcion no valida" -ForegroundColor Red
