@@ -6,13 +6,15 @@ sudo apt install vsftpd
 # Habilitar el firewall y abrir los puertos necesarios
 sudo ufw enable
 sudo ufw allow 20/tcp
-sudo ufw allow 21/tcp
+#sudo ufw allow 990/tcp
 sudo ufw allow 40000:50000/tcp
-sudo ufw reload
+#sudo ufw reload
 
 echo "Firewall configurado y puertos abiertos."
 
 if [[ "$ssl_choice" == "s" ]]; then
+sudo ufw allow 990/tcp
+sudo ufw reload
     echo "Habilitando SSL en vsftpd..."
 
     # Crear carpeta de certificados si no existe
@@ -30,6 +32,7 @@ if [[ "$ssl_choice" == "s" ]]; then
     sudo tee /etc/vsftpd.conf > /dev/null <<EOT
 listen=YES
 listen_ipv6=NO
+listen_port=990
 anonymous_enable=YES
 local_enable=YES
 write_enable=YES
@@ -45,6 +48,7 @@ pam_service_name=vsftpd
 rsa_cert_file=/etc/ssl/custom/vsftpd.crt
 rsa_private_key_file=/etc/ssl/custom/vsftpd.key
 ssl_enable=YES
+implicit_ssl=YES
 force_local_logins_ssl=YES
 force_local_data_ssl=YES
 ssl_tlsv1=YES
@@ -68,6 +72,8 @@ EOT
 
 else
     echo "Configuracion sin SSL aplicada."
+    sudo ufw allow 21/tcp
+    sudo ufw reload
 
 # Configuración de vsftpd
     sudo tee /etc/vsftpd.conf > /dev/null <<EOT
