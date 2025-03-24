@@ -35,13 +35,27 @@ function DescargarYDescomprimir {
     elseif ($carpetaSeleccionada -eq "Nginx") {
         # Definimos la ruta de descarga y destino para Nginx
         $zipPath = "$env:TEMP\nginx-$selectedFile"
-        $RutaDestino = "C:\Nginx"
+        $RutaDestino = "C:\"
         # Descargamos
         $ClienteWeb.DownloadFile($URL_FTP, $zipPath)
         Write-Host "Archivo Nginx descargado en: $zipPath" -ForegroundColor Green
         # Descomprimimos
         Expand-Archive -Path $zipPath -DestinationPath $RutaDestino -Force
-        Write-Host "Nginx descomprimido en: $RutaDestino" -ForegroundColor Green
+        # Buscar la carpeta descomprimida (ej: nginx-1.26.3)
+        $nginxFolder = Get-ChildItem -Path $RutaDestino -Directory | Where-Object { $_.Name -like "nginx*" } | Select-Object -First 1
+
+        if ($nginxFolder) {
+            Write-Host "Se encontró la carpeta descomprimida: $($nginxFolder.Name)" -ForegroundColor Green
+            # Renombrar a C:\nginx
+            Rename-Item -Path "$RutaDestino\$($nginxFolder.Name)" -NewName "nginx" -Force
+            Write-Host "Nginx descomprimido y renombrado a C:\nginx" -ForegroundColor Green
+        } else {
+            Write-Host "No se encontró la carpeta descomprimida de NGINX" -ForegroundColor Red
+            return
+        }
+
+        # ✅ Ahora la ruta final siempre será C:\nginx
+        $RutaNginx = "C:\nginx"
     }
     else {
         Write-Host "Opción no reconocida para la descarga y descompresión." -ForegroundColor Red
@@ -162,16 +176,9 @@ function Configurar-Nginx {
         Write-Host "Iniciando configuración de NGINX..." -ForegroundColor Cyan
 
         # Buscar carpeta real extraída (nginx-version)
-        $nginxFolder = Get-ChildItem -Path $RutaDestino -Directory | Where-Object { $_.Name -like "nginx*" } | Select-Object -First 1
-        if ($nginxFolder) {
-            Write-Host "Se encontró la carpeta: $($nginxFolder.Name)" -ForegroundColor Green
-        } else {
-            Write-Host "No se encontró la carpeta extraída de NGINX en $RutaDestino" -ForegroundColor Red
-            return
-        }
+        $RutaNginx = "C:\nginx"
+        $nginxConfPath = "$RutaNginx\conf\nginx.conf"
 
-        # Ruta completa al nginx.conf correcto
-        $nginxConfPath = "$RutaDestino\$($nginxFolder.Name)\conf\nginx.conf"
         if (!(Test-Path $nginxConfPath)) {
             Write-Host "No se encontró el archivo nginx.conf en: $nginxConfPath" -ForegroundColor Red
             return
@@ -182,15 +189,9 @@ function Configurar-Nginx {
         (Get-Content $nginxConfPath) -replace "#error_log\s+logs/error.log;", "error_log logs/error.log;" | Set-Content $nginxConfPath
         (Get-Content $nginxConfPath) -replace "#pid\s+logs/nginx.pid;", "pid logs/nginx.pid;" | Set-Content $nginxConfPath
 
-        # Ejecutar NGINX desde la carpeta correcta
-        $nginxExe = "$RutaDestino\$($nginxFolder.Name)\nginx.exe"
-        if (Test-Path $nginxExe) {
-            Start-Process -FilePath $nginxExe -WorkingDirectory "$RutaDestino\$($nginxFolder.Name)"
-            Write-Host "NGINX iniciado correctamente." -ForegroundColor Green
-        } else {
-            Write-Host "No se encontró nginx.exe en $nginxExe" -ForegroundColor Red
-            return
-        }
+        # Ejecutar NGINX
+        Start-Process -FilePath "$RutaNginx\nginx.exe" -WorkingDirectory $RutaNginx
+        Write-Host "NGINX iniciado correctamente." -ForegroundColor Green
 
         # Abrir el puerto en firewall
         New-NetFirewallRule -DisplayName "Nginx $Port" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $Port
@@ -205,7 +206,7 @@ function Configurar-Nginx {
         } while ($sslOptionNginx -ne 's' -and $sslOptionNginx -ne 'n')
 
         if ($sslOptionNginx -eq 's') {
-            $sslPath = "$RutaDestino\$($nginxFolder.Name)\ssl"
+            $sslPath = "$RutaNginx\ssl"
             if (!(Test-Path $sslPath)) {
                 New-Item -Path $sslPath -ItemType Directory
                 Write-Host "Carpeta SSL creada en $sslPath"
@@ -213,38 +214,155 @@ function Configurar-Nginx {
 
             # Generar certificado
             & openssl genrsa -out "$sslPath\nginx.key" 2048
-            & openssl req -new -x509 -key "$sslPath\nginx.key" -out "$sslPath\nginx.crt" -days 365 -subj "/CN=$IP"
+            & openssl req -new -x509 -key "$sslPath\nginx.key" -out "$sslPath\nginx.crt" -days 365 -subj "/CN=192.168.1.11"
             Write-Host "Certificado SSL generado" -ForegroundColor Green
 
-            # Sobreescribir nginx.conf con bloque SSL
-            $sslBlock = @"
-server {
-    listen $Port ssl;
-    server_name localhost;
+            ## Ahora se sobreescribe el nginx.conf CON EL FORMATO CORRECTO y en la carpeta correcta
+        $nginxConfPath = "C:\nginx\conf\nginx.conf"
 
-    ssl_certificate      $sslPath\nginx.crt;
-    ssl_certificate_key  $sslPath\nginx.key;
+        $nginxContent = @"
 
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    location / {
-        root   html;
-        index  index.html index.htm;
-    }
+#user  nobody;
+worker_processes  1;
+        
+error_log logs/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+        
+pid logs/nginx.pid;
+        
+        
+events {
+    worker_connections  1024;
 }
-"@
-            Add-Content -Path $nginxConfPath -Value $sslBlock
-            Write-Host "Bloque SSL agregado a nginx.conf" -ForegroundColor Green
-
-            # Validar y recargar NGINX
-            Push-Location "$RutaDestino\$($nginxFolder.Name)"
-            .\nginx.exe -t
-            .\nginx.exe -s reload
-            Pop-Location
+        
+        
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+        
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                  '$status $body_bytes_sent "$http_referer" '
+    #                  '"$http_user_agent" "$http_x_forwarded_for"';
+        
+    #access_log  logs/access.log  main;
+        
+    sendfile        on;
+    #tcp_nopush     on;
+        
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+        
+    #gzip  on;
+        
+    server {
+        listen $port ssl;
+        server_name  localhost;
+        
+        ssl_certificate C:/nginx/ssl/nginx.crt;
+        ssl_certificate_key C:/nginx/ssl/nginx.key;
+        
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+        
+        #charset koi8-r;
+        
+        #access_log  logs/host.access.log  main;
+        
+        location / {
+            root   html;
+            index  index.html index.htm;
         }
+        
+        #error_page  404              /404.html;
+        
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+        
+        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+        #
+        #location ~ \.php$ {
+        #    proxy_pass   http://127.0.0.1;
+        #}
+        
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        #location ~ \.php$ {
+        #    root           html;
+        #    fastcgi_pass   127.0.0.1:9000;
+        #    fastcgi_index  index.php;
+        #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+        #    include        fastcgi_params;
+        #}
+        
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #    deny  all;
+        #}
+    }
+        
+        
+    # another virtual host using mix of IP-, name-, and port-based configuration
+    #
+    #server {
+    #    listen       8000;
+    #    listen       somename:8080;
+    #    server_name  somename  alias  another.alias;
+        
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+        
+        
+    # HTTPS server
+    #
+    #server {
+    #    listen       443 ssl;
+    #    server_name  localhost;
+        
+    #    ssl_certificate      cert.pem;
+    #    ssl_certificate_key  cert.key;
+        
+    #    ssl_session_cache    shared:SSL:1m;
+    #    ssl_session_timeout  5m;
+        
+    #    ssl_ciphers  HIGH:!aNULL:!MD5;
+    #    ssl_prefer_server_ciphers  on;
+        
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+        
+}
+        
+"@
+
+        # Sobrescribir con codificación UTF8 sin BOM
+        [System.IO.File]::WriteAllText($nginxConfPath, $nginxContent, (New-Object System.Text.UTF8Encoding($false)))
+        Write-Host "nginx.conf sobreescrito con SSL y configurado correctamente" -ForegroundColor Green
+
+        # Añadir bloque SSL (lo agrega al final de nginx.conf)
+        #Add-Content -Path "C:\nginx\conf\nginx.conf" -Value $sslBlock
+        Write-Host "Bloque SSL agregado a nginx.conf"
+
+        # Verificar configuración de NGINX
+        Write-Host "Verificando configuración NGINX..."
+        cd C:\nginx
+        .\nginx.exe -t
+        .\nginx.exe -s reload
 
         Write-Host "Configuración de NGINX finalizada." -ForegroundColor Cyan
+        }
 
     } catch {
         Write-Host "Error en la configuración de NGINX: $_" -ForegroundColor Red

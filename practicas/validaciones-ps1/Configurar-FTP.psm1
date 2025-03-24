@@ -37,7 +37,7 @@ if (!(Get-LocalGroup -Name "recursadores" -ErrorAction SilentlyContinue)) {
     net localgroup "recursadores" /add
 }
 if (!(Get-LocalGroup -Name "publica" -ErrorAction SilentlyContinue)) {
-    net localgroup "publica" /add
+   net localgroup "publica" /add
 }
 
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=3} -PSPath IIS:\ -Location "FTPServidor"
@@ -48,7 +48,7 @@ Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/reprobados"
 Remove-WebConfigurationProperty -PSPath IIS:\ -Location "FTPServidor/recursadores" -Filter "system.ftpServer/security/authorization" -Name "."
 
 # Asignar permisos específicos a cada grupo con `Add-WebConfiguration`
-Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTPServidor/publica"
+Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";users="*";permissions=1} -PSPath IIS:\ -Location "FTPServidor/publica"        
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="reprobados";permissions=3} -PSPath IIS:\ -Location "FTPServidor/reprobados"
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="recursadores";permissions=3} -PSPath IIS:\ -Location "FTPServidor/recursadores"
 Add-WebConfiguration "/system.ftpServer/security/authorization" -Value @{accessType="Allow";roles="publica";permissions=3} -PSPath IIS:\ -Location "FTPServidor/publica"

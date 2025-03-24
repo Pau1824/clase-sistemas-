@@ -4,7 +4,7 @@ menu_http(){
     echo "1. Apache"
     echo "2. OpenLiteSpeed"
     echo "3. Nginx"
-    echo "4. Salir"
+    echo "4. Regresar"
 }
 
 menu_http2(){

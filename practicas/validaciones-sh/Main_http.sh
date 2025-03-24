@@ -108,8 +108,8 @@ while true; do
                     continue
                 fi
             elif [ "$op" -eq 4 ]; then
-                echo "Saliendo..."
-                exit 0
+                echo "Regresando al menu prinicipal..."
+                break
             else
                 echo "Opción no válida"
             fi
@@ -129,10 +129,11 @@ while true; do
             for i in "${!carpetas[@]}"; do
                 echo "$((i + 1)). ${carpetas[$i]}"
             done
+            echo "$(( ${#carpetas[@]} + 1 )). Regresar"
 
             read -p "Selecciona la carpeta (1-${#carpetas[@]}): " carpeta_num
             if ! [[ "$carpeta_num" =~ ^[0-9]+$ ]] || [ "$carpeta_num" -lt 1 ] || [ "$carpeta_num" -gt "${#carpetas[@]}" ]; then
-                echo "Opción inválida."
+                echo "Regreando al menu principal..."
                 continue
             fi
 
@@ -174,12 +175,13 @@ while true; do
                     echo "$((i + 1)). $nombre"
                 fi
             done
+            echo "$(( ${#archivos[@]} + 1 )). Regresar"
 
             # Pedir selección de archivo solo por número
             read -p "Selecciona el archivo a descargar (1-${#archivos[@]}): " archivo_num
             if ! [[ "$archivo_num" =~ ^[0-9]+$ ]] || [ "$archivo_num" -lt 1 ] || [ "$archivo_num" -gt "${#archivos[@]}" ]; then
-                echo "Opción inválida."
-                exit 1
+                echo "Regresando al menu principal..."
+                continue
             fi
 
             archivo_seleccionado="${archivos[$((archivo_num - 1))]}"
@@ -209,23 +211,44 @@ while true; do
                 configurar_apache "$port" "$version_apache" "$ssl"
 
             elif [[ "$carpeta_seleccionada" == "Nginx" ]]; then
+                if [[ $archivo_seleccionado =~ nginx-([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+                    version_nginx="${BASH_REMATCH[1]}"
+                    echo "Versión detectada de NGINX: $version_nginx"
+                else
+                    echo "No se pudo obtener la versión de NGINX"
+                    exit 1
+                fi
+
                 port=$(solicitar_puerto)
                 if [[ -z "$port" ]]; then
-                    continue
+                    echo "No ingresaste puerto. Cancelando..."
+                    exit 1
                 fi
-                ssl=$(preguntar_ssl)
 
-                # Cuando tengas lista la función, la llamas así:
-                configurar_nginx "$port" "$version_nginx" "$ssl"
+                ssl=$(preguntar_ssl)
+                configurar_nginx "$port" "$version_nginx" "$ssl" "$ip"
+
 
             elif [[ "$carpeta_seleccionada" == "OpenLiteSpeed" ]]; then
+                if [[ $archivo_seleccionado =~ openlitespeed-([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+                    version_openlitespeed="${BASH_REMATCH[1]}"
+                    echo "Versión detectada de OpenLiteSpeed: $version_openlitespeed"
+                else
+                    echo "No se pudo obtener la versión de OpenLiteSpeed"
+                    exit 1
+                fi
+
+                # Pedir el puerto
                 port=$(solicitar_puerto)
                 if [[ -z "$port" ]]; then
-                    continue
+                    echo "No ingresaste puerto. Cancelando..."
+                    exit 1
                 fi
+
+                # Preguntar por SSL
                 ssl=$(preguntar_ssl)
 
-                # Cuando la función esté lista:
+                # Llamar a la función que configura OpenLiteSpeed
                 configurar_openlitespeed "$port" "$version_openlitespeed" "$ssl"
 
             else

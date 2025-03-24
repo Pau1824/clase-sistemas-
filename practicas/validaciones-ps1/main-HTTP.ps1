@@ -10,10 +10,12 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit
 }
 
-Write-Host "Seleccione el método de instalación:"
+:main_loop
+While ($true) {
+Write-Host "Seleccione el metodo de instalacion:"
 Write-Host "1. HTTP (Servicios)"
 Write-Host "2. FTP (Listar Carpetas)"
-$opcion = Read-Host "Ingrese su opción"
+$opcion = Read-Host "Ingrese su opcion"
 
 if ($opcion -eq "1") {
     while ($true) {
@@ -70,7 +72,7 @@ if ($opcion -eq "1") {
                 }
             }
             "4" {
-                exit
+                continue
             }
             default {
                 Write-Host "Opcion no valida." 
@@ -83,18 +85,18 @@ if ($opcion -eq "1") {
     $ftpFolders = Get-FTPList | Where-Object { $_.Trim() -ne "" }
     if ($ftpFolders.Count -eq 0) {
         Write-Host "No se encontraron carpetas en el FTP." -ForegroundColor Red
-        exit
+        continue main_loop
     }
 
     Write-Host "`n= CARPETAS DISPONIBLES EN EL FTP =" -ForegroundColor Cyan
     for ($i = 0; $i -lt $ftpFolders.Count; $i++) {
         Write-Host "$($i+1). $($ftpFolders[$i].Trim())"
     }
-
+    Write-Host "0. Regresar al menú principal"
     $seleccion = Read-Host "Seleccione la carpeta a instalar (1-$($ftpFolders.Count)) o 0 para salir"
     if ($seleccion -eq "0") {
-        Write-Host "Saliendo..."
-        exit
+        Write-Host "Regresando..."
+        continue main_loop
     } elseif ($seleccion -match "^\d+$" -and [int]$seleccion -le $ftpFolders.Count) {
         $carpetaSeleccionada = $ftpFolders[$seleccion - 1].Trim()
         Write-Host "Selecciono la carpeta: $carpetaSeleccionada"
@@ -110,7 +112,7 @@ if ($opcion -eq "1") {
         # Verificamos que $selectedService no esté vacío
         if ([string]::IsNullOrWhiteSpace($selectedService)) {
             Write-Host "Error: La carpeta seleccionada es vacia o invalida." -ForegroundColor Red
-            return
+            continue main_loop
         }
 
         # Construimos y mostramos la ruta que se va a usar
@@ -125,7 +127,7 @@ if ($opcion -eq "1") {
 
         if ($files.Count -eq 0) {
             Write-Host "No se encontraron archivos en el directorio." -ForegroundColor Red
-            return
+            continue main_loop
         }
 
         if ($files -isnot [System.Array]) {
@@ -156,12 +158,12 @@ if ($opcion -eq "1") {
             }
             $index++
         }
-
+        Write-Host "0. Regresar al menu principal"
         do {
-            $op2 = Read-Host "Elija la version que desea instalar (1-$($files.Count)), o escriba 0 para salir"
+            $op2 = Read-Host "Elija la version que desea instalar (1-$($files.Count)), o escriba 0 para regresar"
             if ($op2 -eq "0") { 
-                Write-Host "Saliendo..." -ForegroundColor Yellow
-                return
+                Write-Host "Regresando ..." -ForegroundColor Yellow
+                continue main_loop
             }
             if ($op2 -match "^\d+$" -and [int]$op2 -le $files.Count) {
                 break
@@ -197,7 +199,7 @@ if ($opcion -eq "1") {
             DescargarYDescomprimir -ftpServer $ftpServer -ftpUser $ftpUser -ftpPass $ftpPass `
                                    -carpetaSeleccionada $carpetaSeleccionada -selectedFile $selectedFile -Port $port
         
-            # 🔎 Obtener versión desde el nombre del archivo seleccionado
+            # Obtener versión desde el nombre del archivo seleccionado
             if ($selectedFile -match '([0-9]+\.[0-9]+\.[0-9]+)') {
                 $versionNginx = $matches[1]
             } else {
@@ -206,7 +208,7 @@ if ($opcion -eq "1") {
             }
         
             $rutaNginx = "C:\Nginx"
-            $IP = "192.168.1.2"  # O pedirla al usuario si quieres
+            $IP = "192.168.1.11"  # O pedirla al usuario si quieres
         
             Configurar-Nginx -RutaDestino $rutaNginx -Port $port -version $versionNginx -IP $IP
         }
@@ -215,4 +217,4 @@ if ($opcion -eq "1") {
 } else {
     Write-Host "Opcion no valida" -ForegroundColor Red
 }
-
+}
