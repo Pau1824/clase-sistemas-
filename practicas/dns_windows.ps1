@@ -62,6 +62,8 @@ netsh interface ipv4 set dns name="Ethernet 2" static 8.8.8.8
 #comando para instalar servicio dns
 Install-WindowsFeature -Name DNS -IncludeManagementTools
 
+Add-DnsServerForwarder -IPAddress 8.8.8.8,1.1.1.1
+
 #Creo una zona DNS de reenvío
 Add-DnsServerPrimaryZone -Name "$domain" -ZoneFile "$domain.dns" -DynamicUpdate None -PassThru 
 #zona DNS inversa
