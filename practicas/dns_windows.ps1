@@ -88,17 +88,4 @@ nslookup www.$domain
 nslookup $ip_address 
 
 
-# ===============================================
-# Script simplificado para cambiar DNS automáticamente
-# ===============================================
 
-$dns = "8.8.8.8","8.8.4.4"  # Puedes cambiar esto por tus DNS preferidos
-
-$adapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" }
-
-if ($adapter) {
-    Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ServerAddresses $dns
-    Write-Host "DNS actualizado a $($dns -join ', ')" -ForegroundColor Green
-} else {
-    Write-Host "No se encontró un adaptador de red activo." -ForegroundColor Red
-}
