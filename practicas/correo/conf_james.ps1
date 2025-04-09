@@ -1,6 +1,6 @@
 
-$domain = "mailandrea.com"
-#$user = "andrea"
+$domain = "paulook.com"
+#$user = "pau"
 $pop3Port = 110
 $smtpPort = 25
 $domainFile = "C:\JamesServer\James\conf\domainlist.xml"
